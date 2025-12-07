@@ -662,52 +662,43 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
         clearFieldErrors();
 
         const key = (keyInput?.value || "").trim();
-        if (!signupEmail || !key) {
-          if (keyError) {
-            keyError.textContent =
-              "Missing email or access key context. Restart Request Access.";
-          }
-          setMockInput("> invalid: missing key/email context", true);
+        if (!key) {
+          if (keyError) keyError.textContent = "Access key is required.";
+          setMockInput("> invalid: missing access key", true);
           return;
         }
 
-        setMockInput("> verifying access key…");
+        const emailForVerify = signupEmail || (emailInput?.value || "").trim().toLowerCase();
 
         try {
           const res = await fetch(`${API_BASE}/api/auth/verify-key`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: signupEmail, key })
+            body: JSON.stringify({
+              email: emailForVerify,
+              key
+            })
           });
+
           const data = await res.json();
 
           if (!res.ok || !data.ok) {
-            const msg = data.error || "Invalid or expired access key.";
+            const msg = data.error || "Unable to verify access key.";
             if (keyError) keyError.textContent = msg;
             setMockInput(`> error: ${msg}`, true);
             return;
           }
 
-          // Save this key for complete-signup step
-          signupKey = key;
-
-          setMockInput("> key accepted. proceeding to password setup.");
-          await typeLine(
-            "[GATE] access key verified. establish clearance password to finalize entry.",
-            { system: true, charDelay: 14 }
-          );
-
-          // Move to password form
-          if (keyForm) keyForm.classList.add("kl-form-hidden");
-          if (passwordForm) passwordForm.classList.remove("kl-form-hidden");
+          // success path continues…
         } catch (err) {
-          console.error("verify-key error:", err);
+          console.error("verify-key frontend error:", err);
           const msg = "Gate service unavailable.";
           if (keyError) keyError.textContent = msg;
           setMockInput(`> error: ${msg}`, true);
         }
       });
     }
+
 
     // -------------------------------------------------------
     // SIGNUP STEP 3: COMPLETE SIGNUP / PASSWORD

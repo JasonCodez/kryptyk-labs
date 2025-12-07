@@ -121,6 +121,8 @@ const upload = multer({
 // routes/auth.js (or wherever your auth routes live)
 // routes/auth.js (inside your router)
 
+const ACCESS_KEY_TTL_MINUTES = 15; // or whatever you’re using
+
 router.post("/request-access", async (req, res) => {
   try {
     console.log("[REQUEST-ACCESS] incoming body:", req.body);
@@ -142,30 +144,28 @@ router.post("/request-access", async (req, res) => {
       });
     }
 
-    // --- 1) Generate a *numeric* 6-digit key ---
-    // 0–999999 padded to length 6
+    // 1) Generate a numeric 6-digit key, e.g. "482190"
     const rawKey = crypto
       .randomInt(0, 1_000_000)
       .toString()
-      .padStart(6, "0"); // e.g. "482190"
+      .padStart(6, "0");
 
-    // --- 2) Pick a random drift (shift) between 0–9 ---
-    const shift = crypto.randomInt(0, 10); // 0–9 inclusive
-    // If you prefer 1–9 only, use: crypto.randomInt(1, 10)
+    // 2) Random drift 0–9 (or 1–9 if you prefer)
+    const shift = crypto.randomInt(0, 10);
 
-    // --- 3) Build cipher by shifting each digit forward by `shift` ---
+    // 3) Cipher = each digit shifted forward by `shift` mod 10
     const cipher = rawKey
       .split("")
       .map((ch) => {
         const d = parseInt(ch, 10);
         return ((d + shift) % 10).toString();
       })
-      .join(""); // still 6 digits
+      .join("");
 
-    // --- 4) Hash the *original* numeric key for verification later ---
+    // 4) Hash the ORIGINAL numeric key
     const keyHash = await bcrypt.hash(rawKey, 10);
 
-    // --- 5) Insert into access_keys (no cipher/shift columns required) ---
+    // 5) Store in access_keys
     await db.query(
       `
       INSERT INTO access_keys (
@@ -201,14 +201,12 @@ router.post("/request-access", async (req, res) => {
       shift
     );
 
-    // --- 6) Return cipher + shift for the puzzle (and debug_key while testing) ---
     return res.json({
       ok: true,
       message: "Access key generated and dispatched.",
       cipher,
       shift,
-      // remove debug_key in production; useful while testing:
-      debug_key: rawKey
+      debug_key: rawKey // remove once you're done testing
     });
   } catch (err) {
     console.error("request-access error:", err);
@@ -221,123 +219,182 @@ router.post("/request-access", async (req, res) => {
 
 
 
+
 // -------------------------------------------------------------
 // VERIFY KEY (Step 2)
 // Expects the *real* 6-digit key, not the cipher
 // -------------------------------------------------------------
+const MAX_KEY_ATTEMPTS = 5;
+
 router.post("/verify-key", async (req, res) => {
   try {
-    let { email, key } = req.body || {};
-    const emailNorm = normalizeEmail(email);
+    console.log("[VERIFY-KEY] incoming body:", req.body);
 
-    if (!emailNorm || !key) {
-      return res.status(400).json({ error: "Missing email or key." });
+    const { email, key } = req.body;
+
+    // Basic validation
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({
+        ok: false,
+        error: "Valid email is required."
+      });
     }
-
-    const user = await findUserByEmail(emailNorm);
-    if (!user) {
-      return res.status(404).json({ error: "No asset found." });
-    }
-
-    const record = await validateAccessKey(user.id, key);
-    if (!record) {
-      return res
-        .status(400)
-        .json({ error: "Invalid or expired access key." });
-    }
-
-    // Do NOT mark it used yet; we let complete-signup actually consume it.
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error("verify-key error:", err);
-    return res.status(500).json({ error: "Internal server error." });
-  }
-});
-
-// -------------------------------------------------------------
-// COMPLETE SIGNUP (Step 3)
-// NOTE: front-end only sends { email, password }
-// We do NOT require key again here, since /verify-key already checked it.
-// -------------------------------------------------------------
-router.post("/complete-signup", async (req, res) => {
-  try {
-    let { email, password } = req.body || {};
-    const emailNorm = normalizeEmail(email);
-
-    if (!/\S+@\S+\.\S+/.test(emailNorm)) {
-      return res.status(400).json({ error: "Invalid email." });
-    }
-    if (!password || password.length < 8) {
-      return res
-        .status(400)
-        .json({ error: "Password must be at least 8 characters." });
-    }
-
-    const user = await findUserByEmail(emailNorm);
-    if (!user) {
-      return res.status(404).json({ error: "No asset found." });
-    }
-
-    // If they already have a password, force them to login/reset
-    if (user.password_hash) {
-      return res.status(403).json({
-        error:
-          "Asset already has a clearance phrase. Use SIGN IN or RESET PASSWORD."
+    if (!key || typeof key !== "string") {
+      return res.status(400).json({
+        ok: false,
+        error: "Valid access key is required."
       });
     }
 
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
-    const hash = await bcrypt.hash(password, rounds);
+    const normalizedEmail = email.trim().toLowerCase();
+    const submittedKey = key.trim(); // should be the 6-digit decrypted key
 
-    await db.query(
-      `UPDATE users
-       SET password_hash   = $1,
-           is_verified     = TRUE,
-           clearance_level = COALESCE(clearance_level, 'INITIATED'),
-           updated_at      = NOW(),
-           last_login_at   = NOW()
-       WHERE id = $2`,
-      [hash, user.id]
+    // Fetch the latest access_key row for this email
+    const { rows } = await db.query(
+      `
+      SELECT id, email, key_hash, created_at, expires_at, used, attempts
+      FROM access_keys
+      WHERE email = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [normalizedEmail]
     );
 
-    // Mark the newest unused key as used, if any
-    const v = await validateAccessKey(user.id, password); // this won't work, so skip
-    // Instead, just mark all unused keys as used after signup:
-    await db.query(
-      `UPDATE access_keys
-       SET used = TRUE
-       WHERE user_id = $1 AND used = FALSE`,
-      [user.id]
+    if (!rows.length) {
+      console.warn("[VERIFY-KEY] no access key row found for", normalizedEmail);
+      return res.status(400).json({
+        ok: false,
+        error: "Access key invalid or expired."
+      });
+    }
+
+    const keyRow = rows[0];
+
+    // Check used / attempts / expiry
+    const now = new Date();
+
+    if (keyRow.used) {
+      return res.status(400).json({
+        ok: false,
+        error: "This access key has already been used."
+      });
+    }
+
+    if (keyRow.attempts >= MAX_KEY_ATTEMPTS) {
+      return res.status(400).json({
+        ok: false,
+        error: "Too many attempts. Request a new access key."
+      });
+    }
+
+    if (keyRow.expires_at && new Date(keyRow.expires_at) < now) {
+      return res.status(400).json({
+        ok: false,
+        error: "This access key has expired. Request a new one."
+      });
+    }
+
+    // Compare submitted key (plain 6-digit) with stored hash
+    const isMatch = await bcrypt.compare(submittedKey, keyRow.key_hash);
+
+    console.log(
+      "[VERIFY-KEY] compare result",
+      { normalizedEmail, submittedKey, isMatch }
     );
 
-    // Re-fetch with latest data
-    const refreshed = await findUserByEmail(emailNorm);
-    const safeUser = {
-      id: refreshed.id,
-      email: refreshed.email,
-      display_name: refreshed.display_name || null,
-      clearance_level: refreshed.clearance_level || "INITIATED"
-    };
+    if (!isMatch) {
+      // bump attempts
+      await db.query(
+        `UPDATE access_keys SET attempts = attempts + 1 WHERE id = $1`,
+        [keyRow.id]
+      );
 
-    const token = signToken(safeUser);
+      return res.status(400).json({
+        ok: false,
+        error: "Access key invalid. Check your decryption."
+      });
+    }
 
-    // Log SIGNUP
+    // Mark this key as used
     await db.query(
-      "INSERT INTO asset_access_logs (user_id, event_type, message) VALUES ($1, $2, $3)",
-      [safeUser.id, "SIGNUP", "Asset clearance profile established."]
+      `
+      UPDATE access_keys
+      SET used = TRUE,
+          used_at = NOW(),
+          attempts = attempts + 1
+      WHERE id = $1
+      `,
+      [keyRow.id]
     );
+
+    // At this point key is valid – either find or create the user record
+    const userResult = await db.query(
+      `
+      SELECT id, email, display_name, clearance_level, clearance_progress_pct
+      FROM users
+      WHERE email = $1
+      `,
+      [normalizedEmail]
+    );
+
+    let user = userResult.rows[0];
+
+    if (!user) {
+      // Initial user creation for new asset
+      const insertUser = await db.query(
+        `
+        INSERT INTO users (
+          email,
+          password_hash,
+          display_name,
+          clearance_level,
+          clearance_progress_pct,
+          created_at,
+          last_login_at,
+          is_verified
+        )
+        VALUES (
+          $1,
+          NULL,
+          NULL,
+          'INITIATED',
+          5,
+          NOW(),
+          NULL,
+          FALSE
+        )
+        RETURNING id, email, display_name, clearance_level, clearance_progress_pct
+        `,
+        [normalizedEmail]
+      );
+
+      user = insertUser.rows[0];
+      console.log("[VERIFY-KEY] created new user for", normalizedEmail);
+    }
+
+    // TODO: you might keep origin_dossier flags etc. here if you want
 
     return res.json({
       ok: true,
-      message: "Signup complete. Clearance established.",
-      token,
-      user: safeUser
+      message: "Access key verified.",
+      user: {
+        id: user.id,
+        email: user.email,
+        display_name: user.display_name,
+        clearance_level: user.clearance_level,
+        clearance_progress_pct: user.clearance_progress_pct
+      }
     });
   } catch (err) {
-    console.error("complete-signup error:", err);
-    return res.status(500).json({ error: "Internal server error." });
+    console.error("verify-key error:", err);
+    return res.status(500).json({
+      ok: false,
+      error: "The lab console failed to verify that key."
+    });
   }
 });
+
 
 // -------------------------------------------------------------
 // LOGIN
