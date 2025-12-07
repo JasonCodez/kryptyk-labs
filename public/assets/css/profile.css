@@ -1,0 +1,599 @@
+/* =========================================================
+   KRYPTYK LABS — PROFILE PAGE ONLY
+   Affects only: body.kl-profile-page
+   ========================================================= */
+
+/* Page shell refinement */
+.kl-profile-page .kl-app-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 20px 24px 20px;
+}
+
+/* Header tweaks (inherits base header styles) */
+.kl-profile-page .kl-app-header {
+  margin-bottom: 8px;
+}
+
+/* Center main profile content */
+.kl-profile-page .kl-app-main-single {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+/* =========================================================
+   ID CARD — COMPACT, BADGE-LIKE LAYOUT
+   ========================================================= */
+
+.kl-profile-page .kl-idcard-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.kl-profile-page .kl-idcard {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: radial-gradient(circle at top left, #101522, #050711);
+  border: 1px solid rgba(129, 140, 248, 0.9);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.9);
+  padding: 12px 14px 22px 14px;
+  overflow: hidden;
+}
+
+/* Subtle top wash */
+.kl-profile-page .kl-idcard::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 26%;
+  background: linear-gradient(
+    135deg,
+    rgba(96, 165, 250, 0.16),
+    rgba(56, 189, 248, 0.08),
+    rgba(244, 114, 182, 0.14)
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* Optional scan strip at bottom (if element is present) */
+.kl-profile-page .kl-idcard-strip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 1) 0,
+    rgba(15, 23, 42, 1) 4px,
+    rgba(30, 64, 175, 0.7) 5px
+  );
+  opacity: 0.9;
+}
+
+/* Two-column layout: photo + fields */
+.kl-profile-page .kl-idcard-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: flex-start;
+}
+
+/* Avatar column */
+.kl-profile-page .kl-idcard-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+}
+
+.kl-profile-page .kl-id-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  background: radial-gradient(circle at top, #1f2937, #020617);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow:
+    0 0 16px rgba(56, 189, 248, 0.5),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+.kl-profile-page .kl-id-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kl-profile-page .kl-id-avatar span {
+  font-family: "DM Mono", monospace;
+  font-size: 1.2rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #e5ecff;
+}
+
+.kl-profile-page .kl-id-tagline {
+  font-size: 0.63rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(191, 219, 254, 0.9);
+}
+
+/* Right column: ID fields */
+.kl-profile-page .kl-idcard-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.78rem;
+  margin-left: 30px;
+}
+
+/* Name row */
+.kl-profile-page .kl-id-header-row {
+  margin-bottom: 2px;
+}
+
+.kl-profile-page .kl-id-header-row .kl-id-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 255, 0.95);
+}
+
+.kl-profile-page .kl-id-header-row .kl-id-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 25px;
+}
+
+/* Field rows */
+.kl-profile-page .kl-id-row,
+.kl-profile-page .kl-id-row-small {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 4px 6px;
+  width: 100%;
+}
+
+.kl-profile-page .kl-id-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 255, 0.95);
+  min-width: 92px;
+  flex-shrink: 0;
+}
+
+.kl-profile-page .kl-id-value {
+  font-family: "DM Mono", monospace;
+  color: #e5ecff;
+  font-size: 0.78rem;
+  white-space: normal;
+  text-overflow: clip;
+}
+
+/* Clearance pill */
+.kl-profile-page .kl-id-clearance {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.65);
+  color: #bbf7d0;
+  font-size: 0.65rem;
+}
+
+/* QR (optional decorative element) */
+.kl-profile-page .kl-id-qr {
+  position: absolute;
+  left: 14px;
+  bottom: 16px;
+  width: 36px;
+  height: 36px;
+  background:
+    radial-gradient(circle at 0 0, rgba(148, 163, 184, 0.4), transparent 55%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 5px,
+      rgba(15, 23, 42, 0.9) 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(15, 23, 42, 0.9) 0,
+      rgba(15, 23, 42, 0.9) 5px,
+      rgba(148, 163, 184, 0.85) 6px
+    );
+  border-radius: 4px;
+  opacity: 0.85;
+}
+
+/* Tiny helper: make sure any inline error under ID uses small text */
+.kl-profile-page .kl-inline-error {
+  font-size: 0.68rem;
+  color: #fb7185;
+}
+
+/* =========================================================
+   PROFILE ACTIONS (UNDER ID CARD)
+   ========================================================= */
+
+.kl-profile-page .kl-profile-actions {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 16px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Edit / upload buttons */
+.kl-profile-page .kl-profile-actions-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kl-profile-page .kl-profile-upload-label {
+  cursor: pointer;
+}
+
+/* Edit form (appears when EDIT PROFILE is clicked) */
+.kl-profile-page .kl-profile-edit-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.kl-profile-page .kl-profile-edit-form.hidden {
+  display: none;
+}
+
+.kl-profile-page .kl-profile-edit-input {
+  flex: 1;
+  min-width: 160px;
+  max-width: 260px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(129, 140, 248, 0.9);
+  background: rgba(15, 23, 42, 0.98);
+  color: #e5ebff;
+  font-size: 0.75rem;
+  font-family: "DM Mono", monospace;
+}
+
+/* Small screens: stack actions and form */
+@media (max-width: 640px) {
+  .kl-profile-page .kl-profile-actions-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kl-profile-page .kl-profile-actions-buttons .kl-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .kl-profile-page .kl-profile-edit-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kl-profile-page .kl-profile-edit-input {
+    max-width: 100%;
+  }
+}
+
+/* =========================================================
+   EXTENDED PROFILE GRID (OVERVIEW / TIER / LOG / MOTTO)
+   ========================================================= */
+
+.kl-profile-page .kl-profile-main {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 1120px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+  gap: 18px;
+}
+
+/* Stack everything like mobile at <= 850px */
+@media (max-width: 850px) {
+  .kl-profile-page .kl-profile-main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.kl-profile-page .kl-profile-panel {
+  background: radial-gradient(circle at top, #020617, #020314);
+  border-radius: 12px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  padding: 14px 16px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.8);
+}
+
+.kl-profile-page .kl-profile-panel-wide {
+  grid-column: span 2;
+}
+
+.kl-profile-page .kl-profile-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.kl-profile-page .kl-profile-panel-header .kl-panel-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(148, 163, 255, 0.9);
+}
+
+.kl-profile-page .kl-profile-panel-header .kl-panel-title {
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #e5e7eb;
+}
+
+.kl-profile-page .kl-profile-panel-body {
+  font-size: 0.8rem;
+  color: #cbd5f5;
+}
+
+/* Profile fields */
+.kl-profile-page .kl-profile-field {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.kl-profile-page .kl-profile-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 255, 0.9);
+}
+
+.kl-profile-page .kl-profile-value {
+  font-family: "DM Mono", monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Progress bar */
+.kl-profile-page .kl-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.kl-profile-page .kl-progress-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: radial-gradient(circle at left, #0b1120, #020617);
+  overflow: hidden;
+  border: 1px solid rgba(30, 64, 175, 0.7);
+}
+
+.kl-profile-page .kl-progress-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #22c55e,
+    #22c55e,
+    #facc15,
+    #ef4444
+  );
+  width: 0%;
+  transition: width 0.8s ease-out;
+}
+
+/* Bioelectric signal display */
+.kl-profile-page .kl-bio-signal-block {
+  margin-top: 12px;
+}
+
+.kl-profile-page .kl-bio-signal {
+  position: relative;
+  height: 40px;
+  margin-top: 4px;
+  background: radial-gradient(circle at top, #020617, #000);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(37, 99, 235, 0.4);
+}
+
+.kl-profile-page .kl-bio-wave {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #22c55e,
+    #facc15,
+    transparent
+  );
+  opacity: 0.7;
+}
+
+.kl-profile-page .kl-bio-wave-1 {
+  top: 30%;
+  animation: kl-bio-wave-anim 3.6s linear infinite;
+}
+
+.kl-profile-page .kl-bio-wave-2 {
+  top: 55%;
+  animation: kl-bio-wave-anim 4.3s linear infinite;
+  opacity: 0.5;
+}
+
+.kl-profile-page .kl-bio-wave-3 {
+  top: 75%;
+  animation: kl-bio-wave-anim 5.1s linear infinite;
+  opacity: 0.4;
+}
+
+@keyframes kl-bio-wave-anim {
+  0% {
+    transform: translateX(0) scaleY(1);
+  }
+  25% {
+    transform: translateX(10%) scaleY(1.4);
+  }
+  50% {
+    transform: translateX(25%) scaleY(0.8);
+  }
+  75% {
+    transform: translateX(45%) scaleY(1.3);
+  }
+  100% {
+    transform: translateX(70%) scaleY(1);
+  }
+}
+
+/* Log window on profile */
+.kl-profile-page .kl-log-window-profile {
+  margin-bottom: 10px;
+  padding: 10px;
+  background: radial-gradient(circle at top, #020617, #020617);
+  border-radius: 8px;
+  border: 1px solid rgba(30, 64, 175, 0.6);
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: "DM Mono", monospace;
+  font-size: 0.75rem;
+}
+
+.kl-profile-page .kl-log-line-profile {
+  margin-bottom: 3px;
+  color: #cbd5f5;
+}
+
+/* Motto */
+.kl-profile-page .kl-motto-block {
+  margin-top: 6px;
+}
+
+.kl-profile-page .kl-motto-text {
+  margin: 4px 0 6px 0;
+  font-size: 0.8rem;
+  color: #e5e7eb;
+  font-style: italic;
+}
+
+.kl-profile-page .kl-motto-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.kl-profile-page .kl-motto-input {
+  flex: 1;
+  min-width: 160px;
+  max-width: 260px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(129, 140, 248, 0.9);
+  background: rgba(15, 23, 42, 0.98);
+  color: #e5ebff;
+  font-size: 0.75rem;
+  font-family: "DM Mono", monospace;
+}
+
+/* Profile responsiveness */
+@media (max-width: 800px) {
+  .kl-profile-page .kl-profile-panel-wide {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .kl-profile-page .kl-app-shell {
+    padding: 12px 12px 20px 12px;
+  }
+
+  .kl-profile-page .kl-profile-panel {
+    padding: 12px 12px 14px 12px;
+  }
+
+  .kl-profile-page .kl-panel-title {
+    font-size: 0.9rem;
+  }
+
+  .kl-profile-page .kl-profile-label {
+    font-size: 0.65rem;
+  }
+
+  .kl-profile-page .kl-profile-value {
+    font-size: 0.75rem;
+  }
+
+  .kl-profile-page .kl-bio-signal {
+    height: 34px;
+  }
+
+  .kl-profile-page .kl-motto-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kl-profile-page .kl-motto-input {
+    max-width: 100%;
+  }
+}
+
+/* Tiny screens – ID card padding tweak */
+@media (max-width: 480px) {
+  .kl-profile-page .kl-idcard {
+    max-width: 100%;
+    padding: 10px 10px 18px 10px;
+  }
+
+  .kl-profile-page .kl-idcard-inner {
+    grid-template-columns: 72px minmax(0, 1fr);
+    column-gap: 8px;
+  }
+
+  .kl-profile-page .kl-id-avatar {
+    width: 72px;
+    height: 72px;
+  }
+}

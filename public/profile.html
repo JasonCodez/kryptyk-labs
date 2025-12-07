@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kryptyk Labs — Asset Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Kryptyk Labs — asset profile and clearance dossier."
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Shared styles -->
+    <link rel="stylesheet" href="assets/css/reset.css" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+
+  <body>
+    <div class="kl-app-shell">
+      <!-- Top bar -->
+      <header class="kl-app-header">
+        <div class="kl-app-brand">
+          <div class="kl-app-logo-mark">
+            <img src="img/logo-mark.png" alt="Kryptyk Labs" />
+          </div>
+          <div class="kl-app-title-block">
+            <div class="kl-app-title">KRYPTYK LABS</div>
+            <div class="kl-app-subtitle">ASSET DOSSIER</div>
+          </div>
+        </div>
+
+        <div class="kl-app-meta">
+          <!-- These pills are controlled by profile.js -->
+          <span id="kl-profile-email-pill" class="kl-pill">asset: —</span>
+          <span
+            id="kl-profile-clearance-pill"
+            class="kl-pill kl-pill-muted"
+          >
+            clearance: —
+          </span>
+
+          <a href="index.html" class="kl-btn kl-btn-ghost kl-btn-xs">
+            ORIENTATION
+          </a>
+
+          <!-- NOTE: id matches profile.js (kl-logout-btn) -->
+          <button id="kl-logout-btn" class="kl-btn kl-btn-ghost kl-btn-xs">
+            LOG OUT
+          </button>
+        </div>
+      </header>
+
+      <!-- Main content -->
+      <main
+        class="kl-app-main"
+        style="grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);"
+      >
+        <!-- LEFT: Profile summary + motto -->
+        <section class="kl-panel">
+          <div class="kl-panel-header">
+            <span class="kl-panel-label">Asset</span>
+            <h2 class="kl-panel-title">Clearance Profile</h2>
+          </div>
+
+          <!-- Top-level error banner -->
+          <div
+            id="kl-profile-error"
+            class="kl-form-error"
+            style="display:none; margin-bottom:8px;"
+          ></div>
+
+          <div class="kl-panel-body">
+            <p class="kl-panel-text">
+              This dossier reflects the current state of your asset record as held
+              inside Kryptyk Labs. Some fields may be redacted depending on your tier.
+            </p>
+
+            <ul class="kl-panel-list">
+              <li>
+                <strong>Asset Email:</strong>
+                <span id="kl-profile-email">—</span>
+              </li>
+              <li>
+                <strong>Display Name:</strong>
+                <span id="kl-profile-name">Asset</span>
+              </li>
+              <li>
+                <strong>Clearance Level:</strong>
+                <span id="kl-profile-clearance">INITIATED</span>
+              </li>
+              <li>
+                <strong>Asset Badge ID:</strong>
+                <span id="kl-profile-badge-id">KRY-0000-0000</span>
+              </li>
+            </ul>
+
+            <!-- Motto block -->
+            <div
+              style="
+                margin-top:14px;
+                padding:10px 12px;
+                border-radius:12px;
+                border:1px solid rgba(88,112,196,0.7);
+                background:radial-gradient(circle at top left,#090f25,#040615);
+              "
+            >
+              <div
+                style="
+                  font-size:0.7rem;
+                  text-transform:uppercase;
+                  letter-spacing:0.16em;
+                  color:rgba(155,178,250,0.9);
+                  margin-bottom:4px;
+                "
+              >
+                Field Motto
+              </div>
+              <div
+                id="kl-profile-motto-display"
+                style="font-size:0.82rem; color:rgba(226,232,255,0.95); margin-bottom:6px;"
+              >
+                No field motto set. The lab is listening…
+              </div>
+
+              <form
+                id="kl-motto-form"
+                class="kl-form"
+                style="gap:4px; margin-top:4px;"
+              >
+                <label
+                  for="kl-motto-input"
+                  class="kl-label"
+                  style="font-size:0.68rem;"
+                >
+                  Update Motto
+                </label>
+                <input
+                  id="kl-motto-input"
+                  type="text"
+                  class="kl-input"
+                  placeholder="eg. THERE IS PATTERN IN THE NOISE"
+                />
+                <button type="submit" class="kl-btn kl-btn-xs">
+                  SAVE MOTTO
+                </button>
+                <div
+                  id="kl-motto-error"
+                  class="kl-form-error"
+                  style="margin-top:2px;"
+                ></div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: Timeline, clearance progress, logs, controls -->
+        <section class="kl-panel kl-panel-stack">
+          <!-- Timeline -->
+          <div class="kl-subpanel">
+            <div class="kl-subpanel-header">
+              <span class="kl-subpanel-tag">Timeline</span>
+              <h3 class="kl-subpanel-title">Access History</h3>
+            </div>
+            <p class="kl-subpanel-text">
+              Key timestamps for this asset. Use these to correlate with gate logs
+              or anomalous signal events.
+            </p>
+            <ul class="kl-panel-list">
+              <li>
+                <strong>Profile Created:</strong>
+                <span id="kl-profile-created">—</span>
+              </li>
+              <li>
+                <strong>Last Login:</strong>
+                <span id="kl-profile-last-login">—</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Clearance progress -->
+          <div class="kl-subpanel">
+            <div class="kl-subpanel-header">
+              <span class="kl-subpanel-tag">Clearance</span>
+              <h3 class="kl-subpanel-title">Tier Progress</h3>
+            </div>
+            <p class="kl-subpanel-text">
+              Approximate progression toward your next clearance threshold, based
+              on lab activity and mission performance indices.
+            </p>
+
+            <div
+              style="
+                margin-top:6px;
+                background:rgba(15,23,42,0.8);
+                border-radius:999px;
+                border:1px solid rgba(129,140,248,0.5);
+                padding:2px;
+                overflow:hidden;
+              "
+            >
+              <div
+                id="kl-clearance-progress"
+                style="
+                  width:5%;
+                  height:10px;
+                  border-radius:999px;
+                  background:linear-gradient(90deg,#4c6fff,#22d3ee);
+                  transition:width 0.4s ease-out;
+                "
+              ></div>
+            </div>
+            <div
+              id="kl-clearance-progress-label"
+              style="
+                margin-top:4px;
+                font-size:0.75rem;
+                font-family:'DM Mono', ui-monospace, monospace;
+                color:rgba(191,219,254,0.9);
+              "
+            >
+              5%
+            </div>
+          </div>
+
+          <!-- Event log -->
+          <div class="kl-subpanel kl-subpanel-log">
+            <div class="kl-subpanel-header">
+              <span class="kl-subpanel-tag">Events</span>
+              <h3 class="kl-subpanel-title">Asset Log Stream</h3>
+            </div>
+            <p class="kl-subpanel-text">
+              Recent events involving this asset. High-signal anomalies will be
+              mirrored to the main gate logs.
+            </p>
+            <div
+              id="kl-profile-logs"
+              class="kl-log-window"
+              style="max-height:150px;"
+            >
+              <!-- Filled by profile.js -->
+            </div>
+          </div>
+
+          <!-- Session controls -->
+          <div class="kl-subpanel">
+            <div class="kl-subpanel-header">
+              <span class="kl-subpanel-tag">Controls</span>
+              <h3 class="kl-subpanel-title">Session Options</h3>
+            </div>
+            <p class="kl-subpanel-text">
+              From here you can exit your active session or return to the orientation console.
+            </p>
+            <div
+              style="
+                display:flex;
+                gap:8px;
+                flex-wrap:wrap;
+                margin-top:6px;
+              "
+            >
+              <a href="index.html" class="kl-btn kl-btn-ghost kl-btn-xs">
+                Return to Orientation
+              </a>
+              <button
+                id="kl-profile-logout-btn-duplicate"
+                class="kl-btn kl-btn-xs"
+              >
+                Log Out Completely
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="assets/js/profile.js"></script>
+  </body>
+</html>

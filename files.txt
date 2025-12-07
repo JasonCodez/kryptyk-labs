@@ -1,0 +1,33 @@
+assets/
+  css/
+    profile.css
+    reset.css
+    sytles.css
+  js/
+    missions/
+      mission-engine.js
+      mission-ui.js
+      missions.js
+    animations.js
+    main.js
+    missions.js
+    profile.js
+img/
+kryptyk-labs-api/
+  middleware/
+    auth.js
+  node_modules/
+  routes/
+    auth.js
+    profile.js
+  sql/
+    schema.sql
+  uploads/
+  .env
+  db.js
+  emailService.js
+  package-lock.json
+  package.json
+  server.js
+index.html
+profile.html

@@ -1,0 +1,988 @@
+/* =========================================================
+   KRYPTYK LABS — GLOBAL + GATE + DASHBOARD STYLES
+   (Index / main app ONLY — no profile page specifics)
+   ========================================================= */
+
+/* -------- Theme Tokens -------- */
+:root {
+  --kl-bg: #02050a;
+  --kl-bg-alt: #050814;
+  --kl-panel: rgba(9, 14, 30, 0.95);
+  --kl-border-subtle: rgba(90, 120, 255, 0.25);
+  --kl-accent: #6f8cff;
+  --kl-accent-soft: rgba(111, 140, 255, 0.08);
+  --kl-accent-strong: #a9ffcb;
+  --kl-danger: #ff4b6a;
+  --kl-text-main: #f5f7ff;
+  --kl-text-muted: #8f96b8;
+  --kl-radius-lg: 18px;
+  --kl-radius-md: 12px;
+  --kl-radius-pill: 999px;
+  --kl-shadow-soft: 0 20px 45px rgba(0, 0, 0, 0.85);
+  --kl-font-sans: "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --kl-font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #0a1024 0%, #02040b 45%, #000 100%);
+  color: var(--kl-text-main);
+  font-family: var(--kl-font-sans);
+}
+
+.hidden {
+  display: none;
+}
+
+/* =========================================================
+   GATE / PRELOADER
+   ========================================================= */
+
+#kl-preloader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  background:
+    radial-gradient(circle at top, rgba(88, 110, 255, 0.16), transparent 55%),
+    radial-gradient(circle at bottom, rgba(0, 255, 195, 0.06), transparent 55%),
+    #020308;
+  z-index: 100;
+}
+
+.kl-preloader-inner {
+  width: 100%;
+  max-width: 720px;
+  background: linear-gradient(145deg, rgba(7, 12, 30, 0.96), rgba(2, 5, 15, 0.98));
+  border-radius: 24px;
+  padding: 24px 24px 20px;
+  border: 1px solid rgba(130, 162, 255, 0.32);
+  box-shadow: var(--kl-shadow-soft);
+  backdrop-filter: blur(22px);
+  animation: kl-drop-in 0.6s ease-out;
+}
+
+/* Logo row in gate */
+.kl-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.kl-logo-mark {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 0 18px rgba(111, 140, 255, 0.55));
+}
+
+.kl-logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kl-logo-title {
+  font-size: 1.02rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f9fbff;
+}
+
+.kl-logo-sub {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--kl-text-muted);
+}
+
+/* Terminal shell */
+.kl-terminal-window {
+  background: radial-gradient(circle at top left, #101736, #050716);
+  border-radius: var(--kl-radius-lg);
+  border: 1px solid var(--kl-border-subtle);
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85);
+}
+
+.kl-terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(120, 145, 255, 0.22);
+  background: linear-gradient(to right, #050718, #0a0f26);
+  font-family: var(--kl-font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--kl-text-muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+.dot-red {
+  background: #ff5f57;
+}
+.dot-yellow {
+  background: #febc2e;
+}
+.dot-green {
+  background: #28c93f;
+}
+
+.kl-terminal-body {
+  padding: 16px 16px 14px;
+  font-family: var(--kl-font-mono);
+  font-size: 0.86rem;
+  background: radial-gradient(circle at top, #060922, #02030c);
+}
+
+.kl-terminal-output {
+  min-height: 110px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding-right: 4px;
+  color: #e0e7ff;
+  margin-bottom: 12px;
+}
+
+.kl-terminal-line {
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+}
+
+.kl-terminal-system {
+  color: #7efad1;
+}
+
+.kl-error-line,
+.kl-terminal-error {
+  color: var(--kl-danger);
+}
+
+/* Form wrapper inside terminal */
+.kl-form-wrapper {
+  background: radial-gradient(circle at left, rgba(109, 135, 255, 0.16), transparent 70%);
+  border-radius: var(--kl-radius-md);
+  border: 1px solid rgba(120, 145, 255, 0.4);
+  padding: 10px 10px 8px;
+  margin-bottom: 12px;
+}
+
+/* Tabs */
+.kl-form-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.kl-tab {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-family: var(--kl-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid rgba(130, 162, 255, 0.35);
+  background: rgba(5, 8, 20, 0.85);
+  color: var(--kl-text-muted);
+}
+
+.kl-tab-active {
+  background: radial-gradient(circle at top left, #7b8bff, #4c5dfa);
+  color: #fdfdff;
+  border-color: rgba(189, 205, 255, 0.9);
+}
+
+/* Form controls */
+.kl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kl-form-hidden {
+  display: none;
+}
+
+.kl-form-title {
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kl-text-muted);
+}
+
+.kl-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--kl-text-muted);
+}
+
+.kl-input {
+  margin-top: 1px;
+  margin-bottom: 3px;
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: rgba(3, 6, 18, 0.9);
+  border: 1px solid rgba(140, 160, 255, 0.4);
+  color: var(--kl-text-main);
+  font-family: var(--kl-font-mono);
+  font-size: 0.8rem;
+}
+
+.kl-input::placeholder {
+  color: rgba(143, 150, 184, 0.7);
+}
+
+.kl-input:focus {
+  outline: none;
+  border-color: rgba(189, 205, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(189, 205, 255, 0.5);
+}
+
+.kl-btn {
+  margin-top: 2px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: radial-gradient(circle at top left, #7b8bff, #4c5dfa);
+  color: #fdfdff;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid rgba(170, 190, 255, 0.7);
+  box-shadow: 0 9px 18px rgba(32, 54, 193, 0.75);
+  transition:
+    transform 0.1s ease-out,
+    box-shadow 0.1s ease-out,
+    filter 0.1s ease-out;
+  cursor: pointer;
+}
+
+.kl-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 13px 24px rgba(39, 65, 210, 0.9);
+  filter: brightness(1.04);
+}
+
+.kl-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 14px rgba(8, 15, 60, 0.95);
+}
+
+.kl-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+  box-shadow: none;
+}
+
+.kl-btn-ghost {
+  background: transparent;
+  border-color: rgba(130, 162, 255, 0.6);
+  color: rgba(213, 221, 255, 0.9);
+}
+
+.kl-btn-xs {
+  font-size: 0.7rem;
+  padding: 3px 10px;
+  text-decoration: none;
+}
+
+.kl-form-hint {
+  font-size: 0.72rem;
+  color: var(--kl-text-muted);
+}
+
+.kl-form-error {
+  min-height: 14px;
+  font-size: 0.72rem;
+  color: var(--kl-danger);
+}
+
+.kl-inline-email {
+  color: var(--kl-accent-strong);
+}
+
+/* Terminal input row (mock command line) */
+.kl-terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kl-terminal-prompt {
+  color: var(--kl-accent-strong);
+}
+
+.kl-terminal-input-mock {
+  color: #e0e7ff;
+}
+
+.kl-terminal-cursor {
+  width: 8px;
+  height: 1.1em;
+  background: #e0e7ff;
+  display: inline-block;
+  animation: kl-cursor-blink 1s step-end infinite;
+}
+
+/* Footer meta under gate */
+.kl-preloader-meta {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--kl-text-muted);
+  font-family: var(--kl-font-mono);
+}
+
+.kl-status-indicator {
+  text-transform: uppercase;
+}
+
+.kl-build-tag {
+  opacity: 0.75;
+}
+
+/* =========================================================
+   SPLASH OVERLAY (POST-LOGIN LOGO)
+   ========================================================= */
+
+.kl-splash {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  background:
+    radial-gradient(circle at top, rgba(88, 110, 255, 0.22), transparent 55%),
+    radial-gradient(circle at bottom, rgba(0, 255, 195, 0.12), transparent 55%),
+    #020308;
+  z-index: 200;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.kl-splash-active {
+  display: flex;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.kl-splash-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.kl-splash-logo {
+  max-width: 220px;
+  max-height: 220px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 26px rgba(111, 140, 255, 0.9));
+}
+
+.kl-splash-text {
+  font-family: var(--kl-font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e5e7ff;
+}
+
+.kl-splash-sub {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+}
+
+/* =========================================================
+   MAIN APP SHELL + DASHBOARD (INDEX ONLY)
+   ========================================================= */
+
+.kl-app-shell {
+  min-height: 100vh;
+  padding: 24px 28px;
+  background: radial-gradient(circle at top, #050816 0, #020308 55%, #000 100%);
+  color: #f5f7ff;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+#kl-app {
+  display: flex;          /* when not .hidden */
+  justify-content: center;
+}
+
+#kl-app.hidden {
+  display: none !important;
+}
+
+
+
+/* Top bar */
+.kl-app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.kl-app-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Header logo frame */
+.kl-app-logo-mark {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: radial-gradient(circle at top, #1b244b, #050816);
+  border: 1px solid rgba(130, 162, 255, 0.7);
+  overflow: hidden;
+}
+
+.kl-app-logo-mark img {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.kl-app-title-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.kl-app-title {
+  font-size: 0.9rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #e5ebff;
+}
+
+.kl-app-subtitle {
+  font-size: 0.75rem;
+  color: rgba(193, 205, 255, 0.85);
+}
+
+.kl-app-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Pills */
+.kl-pill {
+  border-radius: var(--kl-radius-pill);
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid rgba(122, 154, 255, 0.7);
+  color: #e5ebff;
+  background: rgba(20, 26, 61, 0.7);
+  font-family: var(--kl-font-mono);
+}
+
+.kl-pill-muted {
+  border-color: rgba(120, 136, 180, 0.6);
+  color: rgba(193, 205, 255, 0.8);
+  background: rgba(7, 11, 28, 0.9);
+}
+
+/* Main grid */
+.kl-app-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .kl-app-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Panels / cards */
+.kl-panel {
+  border-radius: 18px;
+  border: 1px solid rgba(98, 124, 210, 0.7);
+  background: radial-gradient(circle at top left, #151a32, #050716);
+  padding: 18px 18px 16px;
+  box-shadow: 0 0 24px rgba(4, 6, 18, 0.9);
+}
+
+.kl-panel-header {
+  margin-bottom: 12px;
+}
+
+.kl-panel-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(150, 169, 238, 0.95);
+}
+
+.kl-panel-title {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+  color: #f5f7ff;
+}
+
+.kl-panel-body {
+  font-size: 0.85rem;
+  color: rgba(213, 222, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kl-panel-text {
+  line-height: 1.4;
+}
+
+.kl-panel-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 0.8rem;
+  color: rgba(195, 206, 255, 0.95);
+}
+
+/* Stacked right column */
+.kl-panel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kl-subpanel {
+  border-radius: 14px;
+  border: 1px solid rgba(88, 112, 196, 0.8);
+  background: radial-gradient(circle at top right, #141a35, #050816);
+  padding: 14px 14px 12px;
+}
+
+.kl-subpanel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.kl-subpanel-tag {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(155, 178, 250, 0.95);
+}
+
+.kl-subpanel-title {
+  font-size: 0.95rem;
+  color: #f3f6ff;
+}
+
+.kl-subpanel-text {
+  font-size: 0.8rem;
+  color: rgba(202, 212, 255, 0.95);
+  margin-bottom: 10px;
+}
+
+/* Log window (dashboard event stream) */
+.kl-subpanel-log {
+  background: radial-gradient(circle at bottom left, #080b18, #040610);
+}
+
+.kl-log-window {
+  font-family: var(--kl-font-mono);
+  font-size: 0.78rem;
+  background: radial-gradient(circle at top left, #090d1c, #020308);
+  border-radius: 10px;
+  border: 1px solid rgba(70, 88, 160, 0.9);
+  padding: 8px 10px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.kl-log-line {
+  color: rgba(170, 188, 255, 0.95);
+  margin-bottom: 3px;
+}
+
+.kl-log-line:last-child {
+  margin-bottom: 0;
+}
+
+.kl-dashboard-welcome {
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #cdd1ff;
+  letter-spacing: 0.04em;
+}
+
+/* =========================================================
+   RESPONSIVE TWEAKS
+   ========================================================= */
+
+@media (max-width: 720px) {
+  .kl-app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .kl-app-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .kl-app-meta .kl-btn,
+  .kl-app-meta .kl-pill {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+  }
+
+  .kl-preloader-inner {
+    width: 100%;
+    padding: 16px 12px;
+  }
+
+  .kl-terminal-window {
+    width: 100%;
+  }
+
+  .kl-terminal-output {
+    max-height: 200px;
+    font-size: 0.75rem;
+  }
+
+  .kl-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+@keyframes kl-drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes kl-cursor-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.kl-preloader-fade-out {
+  animation: kl-preloader-fade 0.55s ease forwards;
+}
+
+@keyframes kl-preloader-fade {
+  to {
+    opacity: 0;
+    transform: scale(1.02);
+    pointer-events: none;
+  }
+}
+
+/* ===========================================
+   KRYPTYK LABS — LORE INTRO OVERLAY
+   =========================================== */
+
+.kl-lore {
+  position: fixed;
+  inset: 0;
+  z-index: 350;
+  background:
+    radial-gradient(circle at top, rgba(15, 23, 42, 0.95), #020308 80%);
+  display: none;              /* JS controls display */
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.kl-lore-inner {
+  width: 100%;
+  max-width: 720px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 255, 0.85);
+  background: radial-gradient(circle at top left, #020617, #020314);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.9);
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kl-lore-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kl-lore-tag {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(129, 140, 248, 0.9);
+}
+
+.kl-lore-title {
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e5e7ff;
+}
+
+.kl-lore-body {
+  margin-top: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  background: radial-gradient(circle at top, #020617, #020617);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: #cbd5f5;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.kl-lore-line {
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+}
+
+.kl-lore-controls {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Mobile tweaks */
+@media (max-width: 600px) {
+  .kl-lore-inner {
+    max-width: 100%;
+    padding: 14px 14px 12px;
+  }
+
+  .kl-lore-body {
+    max-height: 220px;
+    font-size: 0.74rem;
+  }
+
+  .kl-lore-title {
+    font-size: 0.95rem;
+  }
+}
+
+.kl-link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: var(--kl-accent);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+
+.kl-link-btn:hover {
+  text-decoration: underline;
+}
+
+/* === Mission Modal === */
+.kl-mission-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 23, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.kl-mission-dialog {
+  width: min(640px, 100% - 2rem);
+  max-height: calc(100vh - 4rem);
+  background: radial-gradient(circle at top left, #0b1020 0, #050815 55%, #02030a 100%);
+  border: 1px solid rgba(129, 140, 248, 0.6);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.95);
+  border-radius: 0.9rem;
+  padding: 1.4rem 1.7rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  overflow: hidden;
+}
+
+/* Header */
+.kl-mission-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+}
+
+.kl-mission-tag {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(129, 140, 248, 0.9);
+  font-family: var(--kl-font-mono);
+}
+
+.kl-mission-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #e5ecff;
+}
+
+/* Body */
+.kl-mission-body {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: rgba(226, 232, 255, 0.9);
+  background: radial-gradient(circle at top left, #040818, #02030b);
+  border-radius: 0.65rem;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  padding: 0.9rem 0.95rem;
+  overflow-y: auto;
+  max-height: 250px;
+  white-space: pre-line; /* keep line breaks but collapse extra spacing */
+}
+
+/* If you later wrap lines in <p> tags, this will space them nicely */
+.kl-mission-body p {
+  margin: 0 0 0.45rem;
+}
+.kl-mission-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* If you use lists inside the body */
+.kl-mission-body ul {
+  margin: 0.4rem 0 0.4rem 1.2rem;
+  padding: 0;
+}
+.kl-mission-body li {
+  margin-bottom: 0.25rem;
+}
+
+/* Optional emphasis helpers if you use <strong>, <em>, <code> in text */
+.kl-mission-body strong {
+  color: #e0f2fe;
+}
+.kl-mission-body em {
+  color: rgba(196, 181, 253, 0.95);
+}
+.kl-mission-body code {
+  font-family: var(--kl-font-mono);
+  font-size: 0.8rem;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* Hint block */
+.kl-mission-hint-block {
+  border-top: 1px dashed rgba(148, 163, 184, 0.5);
+  padding-top: 0.7rem;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.kl-mission-hint-label {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.66rem;
+  color: rgba(148, 163, 184, 0.9);
+  margin-bottom: 0.15rem;
+  font-family: var(--kl-font-mono);
+}
+
+.kl-mission-hint {
+  color: rgba(191, 219, 254, 0.95);
+}
+
+/* Footer buttons */
+.kl-mission-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+/* Mobile tweaks */
+@media (max-width: 640px) {
+  .kl-mission-dialog {
+    width: 100%;
+    max-height: 100vh;
+    padding: 1.1rem 1.1rem 1rem;
+    border-radius: 0.75rem;
+  }
+
+  .kl-mission-body {
+    max-height: 220px;
+    font-size: 0.8rem;
+  }
+
+  .kl-mission-footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+
+/* Ensure hidden actually hides the mission modal */
+.kl-mission-modal.hidden {
+  display: none;
+}
+
+
+
