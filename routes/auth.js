@@ -119,6 +119,8 @@ const upload = multer({
 // REQUEST ACCESS (initial signup, puzzle-based)
 // -------------------------------------------------------------
 // routes/auth.js (or wherever your auth routes live)
+// routes/auth.js (inside your router)
+
 router.post("/request-access", async (req, res) => {
   try {
     console.log("[REQUEST-ACCESS] incoming body:", req.body);
@@ -140,28 +142,30 @@ router.post("/request-access", async (req, res) => {
       });
     }
 
-    // === 6-digit numeric key ===
-    const rawKey = String(
-      Math.floor(100000 + Math.random() * 900000) // 100000–999999
-    );
+    // --- 1) Generate a *numeric* 6-digit key ---
+    // 0–999999 padded to length 6
+    const rawKey = crypto
+      .randomInt(0, 1_000_000)
+      .toString()
+      .padStart(6, "0"); // e.g. "482190"
 
-    // === random drift 0–9 ===
-    const shift = Math.floor(Math.random() * 10);
+    // --- 2) Pick a random drift (shift) between 0–9 ---
+    const shift = crypto.randomInt(0, 10); // 0–9 inclusive
+    // If you prefer 1–9 only, use: crypto.randomInt(1, 10)
 
-    // Encrypt the 6 digits by shifting each digit forward by `shift` (mod 10)
+    // --- 3) Build cipher by shifting each digit forward by `shift` ---
     const cipher = rawKey
       .split("")
       .map((ch) => {
         const d = parseInt(ch, 10);
-        if (Number.isNaN(d)) return ch;
         return ((d + shift) % 10).toString();
       })
-      .join("");
+      .join(""); // still 6 digits
 
-    // Hash the ORIGINAL key (this is what user must ultimately enter)
+    // --- 4) Hash the *original* numeric key for verification later ---
     const keyHash = await bcrypt.hash(rawKey, 10);
 
-    // Insert into access_keys WITH email as first column
+    // --- 5) Insert into access_keys (no cipher/shift columns required) ---
     await db.query(
       `
       INSERT INTO access_keys (
@@ -186,19 +190,25 @@ router.post("/request-access", async (req, res) => {
       [normalizedEmail, keyHash]
     );
 
-    console.log("[ACCESS KEY GENERATED]", {
-      email: normalizedEmail,
+    console.log(
+      "[ACCESS KEY GENERATED]",
+      normalizedEmail,
+      "rawKey=",
       rawKey,
+      "cipher=",
       cipher,
+      "shift=",
       shift
-    });
+    );
 
+    // --- 6) Return cipher + shift for the puzzle (and debug_key while testing) ---
     return res.json({
       ok: true,
       message: "Access key generated and dispatched.",
-      cipher,   // encrypted 6-digit fragment
-      shift,    // numeric drift 0–9
-      debug_key: rawKey // optional, just for dev; remove later
+      cipher,
+      shift,
+      // remove debug_key in production; useful while testing:
+      debug_key: rawKey
     });
   } catch (err) {
     console.error("request-access error:", err);
@@ -208,6 +218,7 @@ router.post("/request-access", async (req, res) => {
     });
   }
 });
+
 
 
 // -------------------------------------------------------------

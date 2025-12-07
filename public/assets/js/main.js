@@ -588,6 +588,7 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email })
           });
+
           const data = await res.json();
 
           if (!res.ok || !data.ok) {
@@ -608,31 +609,28 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             if (span) span.textContent = email;
           }
 
-          // === use cipher + shift from server ===
-          const cipherFragment = data.cipher || "??????";
-          const drift = typeof data.shift === "number" ? data.shift : null;
-
-          // optional: stash debug key in localStorage for you during dev
-          if (data.debug_key) {
-            try {
-              localStorage.setItem("kl_debug_raw_key", data.debug_key);
-            } catch (_) { }
-          }
-
+          // --- show cipher + drift from server ---
           setMockInput("> cryptographic artifact issued.");
 
-          appendLine(
-            `[GATE] cipher fragment received: ${cipherFragment}`,
-            { system: true }
-          );
-
-          if (drift !== null) {
+          if (data.cipher) {
             appendLine(
-              `[GATE] drift parameter: +${drift} (apply to each digit).`,
+              `[GATE] cipher fragment received: ${data.cipher}`,
               { system: true }
             );
           } else {
-            console.warn("No shift value from server:", data);
+            appendLine(
+              "[GATE] cipher fragment received: ??????",
+              { system: true }
+            );
+          }
+
+          if (typeof data.shift === "number") {
+            appendLine(
+              `[HINT] numeric drift parameter: +${data.shift} applied to each digit.`,
+              { system: true }
+            );
+          } else {
+            console.warn("[GATE] no shift value returned from server:", data);
           }
 
           await typeLine(
@@ -651,6 +649,7 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
         }
       });
     }
+
 
 
 
