@@ -118,8 +118,6 @@ const upload = multer({
 // -------------------------------------------------------------
 // REQUEST ACCESS (initial signup, puzzle-based)
 // -------------------------------------------------------------
-// routes/auth.js (or wherever your auth routes live)
-// routes/auth.js (inside your router)
 
 router.post("/request-access", async (req, res) => {
   try {

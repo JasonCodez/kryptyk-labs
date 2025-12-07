@@ -55,6 +55,7 @@
     const keyHint = document.getElementById("kl-key-hint");
     const keyError = document.getElementById("kl-key-error");
 
+
     const passwordInput = document.getElementById("kl-password-input");
     const passwordConfirmInput = document.getElementById(
       "kl-password-confirm-input"
@@ -656,19 +657,38 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
     // -------------------------------------------------------
     // SIGNUP STEP 2: VERIFY KEY
     // -------------------------------------------------------
+    console.log("[KL] keyForm wired?", !!keyForm);
+
     if (keyForm) {
       keyForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        clearFieldErrors();
+        console.log("[KL] keyForm submit fired");
+
+        clearFieldErrors?.(); // safe if defined; no-op if not
 
         const key = (keyInput?.value || "").trim();
         if (!key) {
           if (keyError) keyError.textContent = "Access key is required.";
-          setMockInput("> invalid: missing access key", true);
+          setMockInput?.("> invalid: missing access key", true);
           return;
         }
 
-        const emailForVerify = signupEmail || (emailInput?.value || "").trim().toLowerCase();
+        // use cached signupEmail if present; otherwise fall back to email input
+        const emailForVerify =
+          signupEmail || (emailInput?.value || "").trim().toLowerCase();
+
+        if (!emailForVerify) {
+          if (keyError)
+            keyError.textContent = "Session lost. Please request a new access key.";
+          setMockInput?.("> error: missing email context for verification", true);
+          console.warn(
+            "[KL] No emailForVerify when submitting key. signupEmail=",
+            signupEmail
+          );
+          return;
+        }
+
+        setMockInput?.("> submitting decrypted access key…");
 
         try {
           const res = await fetch(`${API_BASE}/api/auth/verify-key`, {
@@ -680,128 +700,55 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             })
           });
 
-          const data = await res.json();
+          let data;
+          try {
+            data = await res.json();
+          } catch (parseErr) {
+            console.error("[KL] verify-key JSON parse error:", parseErr);
+            data = {};
+          }
+
+          console.log("[KL] /verify-key response:", res.status, data);
 
           if (!res.ok || !data.ok) {
-            const msg = data.error || "Unable to verify access key.";
+            const msg =
+              data.error ||
+              "Unable to verify access key. The lab gate may be unstable.";
             if (keyError) keyError.textContent = msg;
-            setMockInput(`> error: ${msg}`, true);
+            setMockInput?.(`> error: ${msg}`, true);
             return;
           }
 
-          // success path continues…
+          // success
+          setMockInput?.("> key accepted. initializing signup console…");
+          appendLine?.("[GATE] access key verified. Proceed to credentials stage.", {
+            system: true
+          });
+
+          // You can stash user info from data.user if you want:
+          if (data.user) {
+            localStorage.setItem("kl_user_id", data.user.id);
+            localStorage.setItem("kl_asset_email", data.user.email);
+            if (data.user.display_name) {
+              localStorage.setItem("kl_display_name", data.user.display_name);
+            }
+            if (data.user.clearance_level) {
+              localStorage.setItem("kl_clearance_level", data.user.clearance_level);
+            }
+          }
+
+          // move UI from key form -> password form
+          if (keyForm) keyForm.classList.add("kl-form-hidden");
+          if (passwordForm) passwordForm.classList.remove("kl-form-hidden");
         } catch (err) {
           console.error("verify-key frontend error:", err);
           const msg = "Gate service unavailable.";
           if (keyError) keyError.textContent = msg;
-          setMockInput(`> error: ${msg}`, true);
+          setMockInput?.(`> error: ${msg}`, true);
         }
       });
-    }
-
-
-    // -------------------------------------------------------
-    // SIGNUP STEP 3: COMPLETE SIGNUP / PASSWORD
-    // -------------------------------------------------------
-    if (passwordForm) {
-      passwordForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        clearFieldErrors();
-
-        const pw = (passwordInput?.value || "").trim();
-        const pw2 = (passwordConfirmInput?.value || "").trim();
-
-        if (!signupEmail || !signupKey) {
-          if (passwordError) {
-            passwordError.textContent =
-              "Access context lost. Restart Request Access.";
-          }
-          setMockInput("> invalid: missing access context", true);
-          return;
-        }
-
-        if (!pw || pw.length < 8) {
-          if (passwordError) {
-            passwordError.textContent =
-              "Password must be at least 8 characters.";
-          }
-          setMockInput("> invalid: weak password", true);
-          return;
-        }
-        if (pw !== pw2) {
-          if (passwordError) {
-            passwordError.textContent = "Passwords do not match.";
-          }
-          setMockInput("> invalid: passwords mismatch", true);
-          return;
-        }
-
-        setMockInput("> sealing clearance profile…");
-
-        try {
-          const res = await fetch(`${API_BASE}/api/auth/complete-signup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: signupEmail,
-              key: signupKey,
-              password: pw
-            })
-          });
-          const data = await res.json();
-
-          if (!res.ok || !data.ok) {
-            const msg =
-              data.error || "Unable to complete signup at this time.";
-            if (passwordError) passwordError.textContent = msg;
-            setMockInput(`> error: ${msg}`, true);
-            return;
-          }
-
-          // Store token + email + id + display name + clearance
-          if (data.token) {
-            localStorage.setItem("kl_token", data.token);
-          }
-          if (data.user && data.user.id) {
-            localStorage.setItem("kl_user_id", String(data.user.id));
-          }
-          if (data.user && data.user.display_name) {
-            localStorage.setItem("kl_display_name", data.user.display_name);
-          }
-          if (data.user && data.user.clearance_level) {
-            localStorage.setItem(
-              "kl_clearance_level",
-              data.user.clearance_level
-            );
-          }
-          localStorage.setItem("kl_asset_email", signupEmail);
-          localStorage.setItem("kl_access_granted", "true");
-
-          if (assetEmailPill) {
-            assetEmailPill.textContent = `asset: ${signupEmail}`;
-          }
-
-          if (statusIndicator) {
-            statusIndicator.textContent = "STATUS: ACCESS GRANTED";
-          }
-
-          await typeLine(
-            "[CORE] clearance profile established. issuing session token…",
-            { system: true, charDelay: 14 }
-          );
-          await sleep(180);
-          await typeLine(
-            "[GATE] authentication successful. opening lab shell…",
-            { system: true, charDelay: 14 }
-          );
-          beginAppTransition("STATUS: ACCESS GRANTED", { showLoreAfterSplash: true });
-        } catch (err) {
-          console.error("complete-signup error:", err);
-          const msg = "Gate service unavailable.";
-          if (passwordError) passwordError.textContent = msg;
-          setMockInput(`> error: ${msg}`, true);
-        }
-      });
+    } else {
+      console.warn("[KL] #kl-key-form not found in DOM");
     }
 
     // -------------------------------------------------------
