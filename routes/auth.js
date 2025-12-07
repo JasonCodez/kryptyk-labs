@@ -121,8 +121,6 @@ const upload = multer({
 // routes/auth.js (or wherever your auth routes live)
 // routes/auth.js (inside your router)
 
-const ACCESS_KEY_TTL_MINUTES = 15; // or whatever you’re using
-
 router.post("/request-access", async (req, res) => {
   try {
     console.log("[REQUEST-ACCESS] incoming body:", req.body);
