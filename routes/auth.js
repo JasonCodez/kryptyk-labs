@@ -118,76 +118,69 @@ const upload = multer({
 // -------------------------------------------------------------
 router.post("/request-access", async (req, res) => {
   try {
-    let { email } = req.body || {};
-    const emailNorm = normalizeEmail(email);
+    console.log("[REQUEST-ACCESS] incoming body:", req.body);
 
-    if (!/\S+@\S+\.\S+/.test(emailNorm)) {
-      return res.status(400).json({ error: "Invalid email." });
-    }
+    const { email } = req.body;
 
-    let user = await findUserByEmail(emailNorm);
-
-    // If user exists AND has password -> they must use reset instead
-    if (user && user.password_hash) {
-      return res.status(403).json({
-        error: "This asset is already registered. Use RESET PASSWORD instead."
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({
+        ok: false,
+        error: "Valid email is required."
       });
     }
 
-    // Create user if not exists
-    if (!user) {
-      const insert = await db.query(
-        `INSERT INTO users (email, is_verified, clearance_level)
-         VALUES ($1, FALSE, 'INITIATED')
-         RETURNING *`,
-        [emailNorm]
-      );
-      user = insert.rows[0];
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return res.status(400).json({
+        ok: false,
+        error: "Email cannot be empty."
+      });
     }
 
-    // Raw key that /verify-key will expect
-    const rawKey = generateSixDigitKey();
-    const hashed = await hashKey(rawKey);
+    // Generate access key and hash it
+    const rawKey = crypto.randomBytes(4).toString("hex"); // e.g. "9af3b2c1"
+    const keyHash = await bcrypt.hash(rawKey, 10);
 
-    // Invalidate old keys
+    // Insert into access_keys WITH email as first column
     await db.query(
-      `UPDATE access_keys
-       SET used = TRUE
-       WHERE user_id = $1 AND used = FALSE`,
-      [user.id]
+      `
+      INSERT INTO access_keys (
+        email,
+        key_hash,
+        created_at,
+        expires_at,
+        used_at,
+        attempts,
+        used
+      )
+      VALUES (
+        $1,
+        $2,
+        NOW(),
+        NOW() + interval '${ACCESS_KEY_TTL_MINUTES} minutes',
+        NULL,
+        0,
+        FALSE
+      )
+      `,
+      [normalizedEmail, keyHash]
     );
 
-    // Insert new key (15 minute TTL)
-    await db.query(
-      `INSERT INTO access_keys (user_id, key_hash, expires_at, used)
-       VALUES ($1, $2, NOW() + INTERVAL '15 minutes', FALSE)`,
-      [user.id, hashed]
-    );
-
-    // Cipher for the puzzle
-    const shift = Math.floor(Math.random() * 9) + 1; // 1–9
-    const cipher = encryptKeyWithShift(rawKey, shift);
-    const sanity = decryptKeyWithShift(cipher, shift); // should equal rawKey
-
-    console.log("=== ACCESS KEY DEBUG ===");
-    console.log("email:   ", emailNorm);
-    console.log("rawKey:  ", rawKey);
-    console.log("shift:   ", shift);
-    console.log("cipher:  ", cipher);
-    console.log("sanity:  ", sanity);
-    console.log("========================");
+    // Debug log – REMOVE later
+    console.log("[ACCESS KEY GENERATED]", normalizedEmail, rawKey);
 
     return res.json({
       ok: true,
-      cipher,
-      shift,
-      rawKeyDev: sanity, // dev-only; front-end can ignore or use
-      message:
-        "Cryptographic access artifact issued. Decrypt the key using the gate hint to proceed."
+      message: "Access key generated and dispatched.",
+      // for now, helpful while email sending isn’t wired:
+      debug_key: rawKey
     });
   } catch (err) {
     console.error("request-access error:", err);
-    return res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({
+      ok: false,
+      error: "The lab console failed to generate an access key."
+    });
   }
 });
 
@@ -396,107 +389,94 @@ router.post("/login", async (req, res) => {
 // store it in access_keys, and log it. Front-end still just
 // shows a generic success message.
 // -------------------------------------------------------------
+// ---------- REQUEST PASSWORD RESET ----------
 router.post("/request-reset", async (req, res) => {
+  const rawEmail = req.body?.email;
+
+  if (!rawEmail || typeof rawEmail !== "string") {
+    console.log("[REQUEST-RESET] missing or invalid email in body:", req.body);
+    return res.status(400).json({
+      ok: false,
+      error: "A valid email is required."
+    });
+  }
+
+  const email = rawEmail.trim().toLowerCase();
+  console.log("[REQUEST-RESET] normalizedEmail:", email);
+
   try {
-    let { email } = req.body || {};
-    const emailNorm = normalizeEmail(email);
+    // 1) Look up user; if not found, respond success anyway to avoid leaking which emails exist
+    const userResult = await db.query(
+      `SELECT id, email, is_verified
+       FROM users
+       WHERE email = $1`,
+      [email]
+    );
 
-    if (!/\S+@\S+\.\S+/.test(emailNorm)) {
-      return res.status(400).json({ error: "Invalid email." });
-    }
-
-    const user = await findUserByEmail(emailNorm);
+    const user = userResult.rows[0];
     if (!user) {
-      // don't leak existence; match your current behavior
-      return res.status(404).json({ error: "Unauthorized. asset not found" });
-    }
-    if (!user.password_hash) {
-      return res
-        .status(403)
-        .json({ error: "Unauthorized. Use Request Access." });
+      console.log("[REQUEST-RESET] no user for email, returning generic success");
+      return res.json({
+        ok: true,
+        message: "If this asset exists in the lab, a reset key has been dispatched."
+      });
     }
 
-    const rawKey = generateSixDigitKey();
-    const keyHash = await hashKey(rawKey);
+    // (Optional) if you want to require verified accounts only:
+    // if (!user.is_verified) {
+    //   return res.status(400).json({
+    //     ok: false,
+    //     error: "This asset has not completed initial verification."
+    //   });
+    // }
 
-    // Invalidate old keys
-    await db.query(
-      `UPDATE access_keys
-       SET used = TRUE
-       WHERE user_id = $1 AND used = FALSE`,
-      [user.id]
-    );
+    // 2) Generate reset key
+    const plainKey = Math.floor(100000 + Math.random() * 900000).toString();
+    const keyHash = await bcrypt.hash(plainKey, BCRYPT_ROUNDS);
 
-    // Insert reset key
-    await db.query(
-      `INSERT INTO access_keys (user_id, key_hash, expires_at, used)
-       VALUES ($1, $2, NOW() + INTERVAL '15 minutes', FALSE)`,
-      [user.id, keyHash]
-    );
+    // 3) Insert reset key into access_keys INCLUDING email
+    const insertKeySql = `
+      INSERT INTO access_keys (
+        email,
+        key_hash,
+        created_at,
+        expires_at,
+        used_at,
+        attempts,
+        used
+      )
+      VALUES (
+        $1,
+        $2,
+        NOW(),
+        NOW() + interval '15 minutes',
+        NULL,
+        0,
+        FALSE
+      )
+      RETURNING id, email, created_at, expires_at;
+    `;
 
-    console.log(`[RESET KEY] ${emailNorm}: ${rawKey}`);
+    console.log("[REQUEST-RESET] inserting reset key for:", email);
+    const keyResult = await db.query(insertKeySql, [email, keyHash]);
+    console.log("[REQUEST-RESET] inserted access_key row (reset):", keyResult.rows[0]);
+
+    // 4) TODO: send reset email here using your mailer (with plainKey)
+    console.log("[REQUEST-RESET] plain reset key (for testing only):", plainKey);
 
     return res.json({
       ok: true,
-      message: "If asset exists, reset key generated for this session."
-      // You *could* also include rawKeyDev here if you want the frontend to display it.
-      // rawKeyDev: rawKey
+      message: "If this asset exists in the lab, a reset key has been dispatched."
     });
   } catch (err) {
     console.error("request-reset error:", err);
-    return res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({
+      ok: false,
+      error: "The lab console failed to generate your reset key."
+    });
   }
 });
 
-// -------------------------------------------------------------
-// PASSWORD RESET: complete-reset
-// -------------------------------------------------------------
-router.post("/complete-reset", async (req, res) => {
-  try {
-    let { email, key, password } = req.body || {};
-    const emailNorm = normalizeEmail(email);
-
-    if (!emailNorm || !key) {
-      return res.status(400).json({ error: "Email & key required." });
-    }
-    if (!password || password.length < 8) {
-      return res.status(400).json({ error: "Password too short." });
-    }
-
-    const user = await findUserByEmail(emailNorm);
-    if (!user) {
-      return res.status(404).json({ error: "No asset found." });
-    }
-
-    const record = await validateAccessKey(user.id, key);
-    if (!record) {
-      return res.status(400).json({ error: "Invalid or expired key." });
-    }
-
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
-    const hash = await bcrypt.hash(password, rounds);
-
-    await db.query(
-      `UPDATE users
-       SET password_hash = $1,
-           updated_at    = NOW()
-       WHERE id = $2`,
-      [hash, user.id]
-    );
-
-    await markKeyUsed(record.id);
-
-    await db.query(
-      "INSERT INTO asset_access_logs (user_id, event_type, message) VALUES ($1, $2, $3)",
-      [user.id, "RESET", "Asset clearance phrase reset via protocol."]
-    );
-
-    return res.json({ ok: true, message: "Password reset complete." });
-  } catch (err) {
-    console.error("complete-reset error:", err);
-    return res.status(500).json({ error: "Internal server error." });
-  }
-});
 
 // -------------------------------------------------------------
 // AUTH ME (session validation)
