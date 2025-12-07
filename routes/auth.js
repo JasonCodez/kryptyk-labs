@@ -5,6 +5,8 @@ const jwt = require("jsonwebtoken");
 const db = require("../db");
 const multer = require("multer");
 const path = require("path");
+const ACCESS_KEY_TTL_MINUTES = Number(process.env.ACCESS_KEY_TTL_MINUTES || 15);
+
 
 const crypto = require("crypto");
 
