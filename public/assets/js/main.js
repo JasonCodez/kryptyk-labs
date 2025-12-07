@@ -749,110 +749,79 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
 
     // 
 
+    // Password form submit (Step 3: complete signup)
     if (passwordForm) {
       passwordForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        console.log("[KL] passwordForm submit fired");
-
-        if (passwordError) passwordError.textContent = "";
-        clearFieldErrors?.();
+        console.log("[GATE] password form submitted.");
+        clearFieldErrors();
 
         const password = (passwordInput?.value || "").trim();
-        const displayName = (codenameInput?.value || "").trim() || null;
+
+        if (!signupEmail) {
+          if (passwordError) {
+            passwordError.textContent =
+              "Email context lost. Restart the gate sequence.";
+          }
+          setMockInput("> error: missing asset email context.", true);
+          return;
+        }
 
         if (!password || password.length < 8) {
-          const msg = "Password must be at least 8 characters.";
-          if (passwordError) passwordError.textContent = msg;
-          setMockInput?.(`> invalid: ${msg}`, true);
+          if (passwordError) {
+            passwordError.textContent = "Password must be at least 8 characters.";
+          }
+          setMockInput("> invalid: password too short", true);
           return;
         }
 
-        // Use the same email we used for verify-key
-        const emailForSignup =
-          signupEmail || (emailInput?.value || "").trim().toLowerCase();
-
-        if (!emailForSignup) {
-          const msg = "Session lost. Please request a new access key.";
-          if (passwordError) passwordError.textContent = msg;
-          setMockInput?.(`> error: ${msg}`, true);
-          console.warn("[KL] No emailForSignup in password step");
-          return;
-        }
-
-        setMockInput?.("> finalizing credentials…");
+        setMockInput("> sealing asset credentials…");
 
         try {
           const res = await fetch(`${API_BASE}/api/auth/complete-signup`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              email: emailForSignup,
+              email: signupEmail,
               password,
-              display_name: displayName
+              // no codename yet – keep it null for now
+              display_name: null
             })
           });
 
-          let data;
-          try {
-            data = await res.json();
-          } catch (parseErr) {
-            console.error("[KL] complete-signup JSON parse error:", parseErr);
-            data = {};
-          }
-
-          console.log("[KL] /complete-signup response:", res.status, data);
+          const data = await res.json();
+          console.log("[COMPLETE-SIGNUP] response:", data);
 
           if (!res.ok || !data.ok) {
             const msg =
-              data.error ||
-              "Unable to finalize signup. The lab console may be unstable.";
+              data.error || "The lab console failed to finalize your asset.";
             if (passwordError) passwordError.textContent = msg;
-            setMockInput?.(`> error: ${msg}`, true);
+            setMockInput(`> error: ${msg}`, true);
             return;
           }
 
-          // Success: store token + basic user info
+          // Store token + email, then transition to app
           if (data.token) {
             localStorage.setItem("kl_token", data.token);
-            localStorage.setItem("kl_access_granted", "true");
+          }
+          if (data.user?.email) {
+            localStorage.setItem("kl_asset_email", data.user.email);
           }
 
-          const user = data.user || {};
-          if (user.email) {
-            localStorage.setItem("kl_asset_email", user.email);
-          }
-          if (user.id) {
-            localStorage.setItem("kl_user_id", user.id);
-          }
-          if (user.display_name) {
-            localStorage.setItem("kl_display_name", user.display_name);
-          }
-          if (user.clearance_level) {
-            localStorage.setItem("kl_clearance_level", user.clearance_level);
-          }
+          appendLine("[GATE] asset credentials sealed. Clearance channel unlocked.", {
+            system: true
+          });
 
-          appendLine?.(
-            "[GATE] credentials locked. transferring to asset orientation…",
-            { system: true }
-          );
-
-          // Now do your post-login transition (splash then dashboard)
-          try {
-            beginAppTransition?.(); // if you have this helper hooked to splash
-          } catch (err) {
-            console.warn("beginAppTransition not defined, doing fallback nav.", err);
-            window.location.href = "index.html"; // or "orientation.html" if separate
-          }
+          await beginAppTransition(data.user || null);
         } catch (err) {
-          console.error("complete-signup frontend error:", err);
+          console.error("complete-signup error:", err);
           const msg = "Gate service unavailable.";
           if (passwordError) passwordError.textContent = msg;
-          setMockInput?.(`> error: ${msg}`, true);
+          setMockInput(`> error: ${msg}`, true);
         }
       });
-    } else {
-      console.warn("[KL] #kl-password-form not found in DOM");
     }
+
 
     // -------------------------------------------------------
     // LOGIN (EXISTING USER)

@@ -428,14 +428,13 @@ router.post("/complete-signup", async (req, res) => {
       // 1) Ensure there is a valid (unused, unexpired) access key for this email
       const keyRes = await client.query(
         `
-        SELECT id
-        FROM access_keys
-        WHERE email = $1
-          AND used = FALSE
-          AND expires_at > NOW()
-        ORDER BY created_at DESC
-        LIMIT 1
-        `,
+  SELECT id, used
+  FROM access_keys
+  WHERE email = $1
+    AND expires_at > NOW()
+  ORDER BY created_at DESC
+  LIMIT 1
+  `,
         [normalizedEmail]
       );
 
@@ -444,7 +443,7 @@ router.post("/complete-signup", async (req, res) => {
         return res.status(400).json({
           ok: false,
           error:
-            "No valid access key found for that email. Request a new key and try again."
+            "No valid access key found for that email.\nRequest a new key and try again."
         });
       }
 
@@ -453,52 +452,52 @@ router.post("/complete-signup", async (req, res) => {
       // 2) Hash password
       const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-      // 3) Upsert user with email + password_hash + display_name
+      // 3) Upsert user (unchanged)
       const userRes = await client.query(
         `
-        INSERT INTO users (
-          email,
-          password_hash,
-          display_name,
-          clearance_level,
-          clearance_progress_pct,
-          created_at,
-          is_verified
-        )
-        VALUES (
-          $1,
-          $2,
-          $3,
-          'INITIATED',
-          5,
-          NOW(),
-          FALSE
-        )
-        ON CONFLICT (email)
-        DO UPDATE SET
-          password_hash = EXCLUDED.password_hash,
-          display_name  = COALESCE(EXCLUDED.display_name, users.display_name),
-          updated_at    = NOW()
-        RETURNING
-          id,
-          email,
-          display_name,
-          clearance_level,
-          clearance_progress_pct
-        `,
+  INSERT INTO users (
+    email,
+    password_hash,
+    display_name,
+    clearance_level,
+    clearance_progress_pct,
+    created_at,
+    is_verified
+  )
+  VALUES (
+    $1,
+    $2,
+    $3,
+    'INITIATED',
+    5,
+    NOW(),
+    FALSE
+  )
+  ON CONFLICT (email) DO UPDATE
+  SET
+    password_hash = EXCLUDED.password_hash,
+    display_name = COALESCE(EXCLUDED.display_name, users.display_name),
+    updated_at = NOW()
+  RETURNING
+    id,
+    email,
+    display_name,
+    clearance_level,
+    clearance_progress_pct
+  `,
         [normalizedEmail, passwordHash, display_name || null]
       );
 
       const user = userRes.rows[0];
 
-      // 4) Mark that access key as used
+      // 4) Mark that access key as used (idempotent – in case verify-key already did it)
       await client.query(
         `
-        UPDATE access_keys
-        SET used = TRUE,
-            used_at = NOW()
-        WHERE id = $1
-        `,
+  UPDATE access_keys
+  SET used = TRUE,
+      used_at = COALESCE(used_at, NOW())
+  WHERE id = $1
+  `,
         [accessKeyId]
       );
 
