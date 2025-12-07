@@ -1,9 +1,9 @@
 // assets/js/main.js
 (() => {
   const API_BASE =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:4000"
-    : "";
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? "http://localhost:4000"
+      : "";
 
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -608,21 +608,26 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             if (span) span.textContent = email;
           }
 
-          // terminal output: cipher + shift
+          // === NEW: cipher fragment + drift parameter ===
+          const rawFragment = data.debug_key || data.cipher || "??????";
+          const DRIFT = 3; // your lore "drift parameter"
+
+          // optional: stash for debugging
+          try {
+            localStorage.setItem("kl_debug_key_fragment", rawFragment);
+          } catch (_) { }
+
           setMockInput("> cryptographic artifact issued.");
+
           appendLine(
-            `[GATE] cipher fragment received: ${data.cipher || "??????"}`,
+            `[GATE] cipher fragment received: ${rawFragment}`,
             { system: true }
           );
 
-          if (typeof data.shift === "number") {
-            appendLine(
-              `[HINT] numeric drift parameter: +${data.shift} applied to each digit.`,
-              { system: true }
-            );
-          } else {
-            console.warn("No shift value from server:", data);
-          }
+          appendLine(
+            `[GATE] drift parameter: +${DRIFT.toString().padStart(2, "0")} (apply forward shift).`,
+            { system: true }
+          );
 
           await typeLine(
             "[GATE] decrypt the fragment using the drift parameter, then continue to Step 2.",
@@ -640,6 +645,7 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
         }
       });
     }
+
 
     // -------------------------------------------------------
     // SIGNUP STEP 2: VERIFY KEY
