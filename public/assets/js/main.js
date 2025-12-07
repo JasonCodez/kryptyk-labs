@@ -608,26 +608,32 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             if (span) span.textContent = email;
           }
 
-          // === NEW: cipher fragment + drift parameter ===
-          const rawFragment = data.debug_key || data.cipher || "??????";
-          const DRIFT = 3; // your lore "drift parameter"
+          // === use cipher + shift from server ===
+          const cipherFragment = data.cipher || "??????";
+          const drift = typeof data.shift === "number" ? data.shift : null;
 
-          // optional: stash for debugging
-          try {
-            localStorage.setItem("kl_debug_key_fragment", rawFragment);
-          } catch (_) { }
+          // optional: stash debug key in localStorage for you during dev
+          if (data.debug_key) {
+            try {
+              localStorage.setItem("kl_debug_raw_key", data.debug_key);
+            } catch (_) { }
+          }
 
           setMockInput("> cryptographic artifact issued.");
 
           appendLine(
-            `[GATE] cipher fragment received: ${rawFragment}`,
+            `[GATE] cipher fragment received: ${cipherFragment}`,
             { system: true }
           );
 
-          appendLine(
-            `[GATE] drift parameter: +${DRIFT.toString().padStart(2, "0")} (apply forward shift).`,
-            { system: true }
-          );
+          if (drift !== null) {
+            appendLine(
+              `[GATE] drift parameter: +${drift} (apply to each digit).`,
+              { system: true }
+            );
+          } else {
+            console.warn("No shift value from server:", data);
+          }
 
           await typeLine(
             "[GATE] decrypt the fragment using the drift parameter, then continue to Step 2.",
@@ -645,6 +651,7 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
         }
       });
     }
+
 
 
     // -------------------------------------------------------

@@ -118,6 +118,7 @@ const upload = multer({
 // -------------------------------------------------------------
 // REQUEST ACCESS (initial signup, puzzle-based)
 // -------------------------------------------------------------
+// routes/auth.js (or wherever your auth routes live)
 router.post("/request-access", async (req, res) => {
   try {
     console.log("[REQUEST-ACCESS] incoming body:", req.body);
@@ -139,8 +140,25 @@ router.post("/request-access", async (req, res) => {
       });
     }
 
-    // Generate access key and hash it
-    const rawKey = crypto.randomBytes(4).toString("hex"); // e.g. "9af3b2c1"
+    // === 6-digit numeric key ===
+    const rawKey = String(
+      Math.floor(100000 + Math.random() * 900000) // 100000–999999
+    );
+
+    // === random drift 0–9 ===
+    const shift = Math.floor(Math.random() * 10);
+
+    // Encrypt the 6 digits by shifting each digit forward by `shift` (mod 10)
+    const cipher = rawKey
+      .split("")
+      .map((ch) => {
+        const d = parseInt(ch, 10);
+        if (Number.isNaN(d)) return ch;
+        return ((d + shift) % 10).toString();
+      })
+      .join("");
+
+    // Hash the ORIGINAL key (this is what user must ultimately enter)
     const keyHash = await bcrypt.hash(rawKey, 10);
 
     // Insert into access_keys WITH email as first column
@@ -168,14 +186,19 @@ router.post("/request-access", async (req, res) => {
       [normalizedEmail, keyHash]
     );
 
-    // Debug log – REMOVE later
-    console.log("[ACCESS KEY GENERATED]", normalizedEmail, rawKey);
+    console.log("[ACCESS KEY GENERATED]", {
+      email: normalizedEmail,
+      rawKey,
+      cipher,
+      shift
+    });
 
     return res.json({
       ok: true,
       message: "Access key generated and dispatched.",
-      // for now, helpful while email sending isn’t wired:
-      debug_key: rawKey
+      cipher,   // encrypted 6-digit fragment
+      shift,    // numeric drift 0–9
+      debug_key: rawKey // optional, just for dev; remove later
     });
   } catch (err) {
     console.error("request-access error:", err);
@@ -185,6 +208,7 @@ router.post("/request-access", async (req, res) => {
     });
   }
 });
+
 
 // -------------------------------------------------------------
 // VERIFY KEY (Step 2)
