@@ -391,6 +391,157 @@ router.post("/verify-key", async (req, res) => {
   }
 });
 
+// -------------------------------------------------------------
+// COMPLETE SIGNUP (Step 3)
+// -------------------------------------------------------------
+
+router.post("/complete-signup", async (req, res) => {
+  const { email, password, display_name } = req.body;
+
+  try {
+    console.log("[COMPLETE-SIGNUP] incoming body:", {
+      email,
+      hasPassword: !!password,
+      display_name
+    });
+
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({
+        ok: false,
+        error: "Email is required to complete signup."
+      });
+    }
+
+    if (!password || typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({
+        ok: false,
+        error: "Password must be at least 8 characters."
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 1) Ensure there is a valid (unused, unexpired) access key for this email
+      const keyRes = await client.query(
+        `
+        SELECT id
+        FROM access_keys
+        WHERE email = $1
+          AND used = FALSE
+          AND expires_at > NOW()
+        ORDER BY created_at DESC
+        LIMIT 1
+        `,
+        [normalizedEmail]
+      );
+
+      if (keyRes.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          ok: false,
+          error:
+            "No valid access key found for that email. Request a new key and try again."
+        });
+      }
+
+      const accessKeyId = keyRes.rows[0].id;
+
+      // 2) Hash password
+      const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+      // 3) Upsert user with email + password_hash + display_name
+      const userRes = await client.query(
+        `
+        INSERT INTO users (
+          email,
+          password_hash,
+          display_name,
+          clearance_level,
+          clearance_progress_pct,
+          created_at,
+          is_verified
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          'INITIATED',
+          5,
+          NOW(),
+          FALSE
+        )
+        ON CONFLICT (email)
+        DO UPDATE SET
+          password_hash = EXCLUDED.password_hash,
+          display_name  = COALESCE(EXCLUDED.display_name, users.display_name),
+          updated_at    = NOW()
+        RETURNING
+          id,
+          email,
+          display_name,
+          clearance_level,
+          clearance_progress_pct
+        `,
+        [normalizedEmail, passwordHash, display_name || null]
+      );
+
+      const user = userRes.rows[0];
+
+      // 4) Mark that access key as used
+      await client.query(
+        `
+        UPDATE access_keys
+        SET used = TRUE,
+            used_at = NOW()
+        WHERE id = $1
+        `,
+        [accessKeyId]
+      );
+
+      await client.query("COMMIT");
+
+      // 5) Issue JWT
+      const tokenPayload = {
+        sub: user.id,
+        email: user.email
+      };
+
+      const token = jwt.sign(tokenPayload, JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_IN || "2h"
+      });
+
+      console.log("[COMPLETE-SIGNUP] success for:", user.email);
+
+      return res.json({
+        ok: true,
+        message: "Signup complete.",
+        token,
+        user
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error("complete-signup transaction error:", err);
+      return res.status(500).json({
+        ok: false,
+        error:
+          "The lab console failed to finalize your asset credentials. Try again in a moment."
+      });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("complete-signup outer error:", err);
+    return res.status(500).json({
+      ok: false,
+      error: "The lab console is unstable. Please try again shortly."
+    });
+  }
+});
+
 
 // -------------------------------------------------------------
 // LOGIN

@@ -238,12 +238,6 @@
     // -------------------------------------------------------
     // LORE + SPLASH + APP TRANSITIONS
     // -------------------------------------------------------
-    // -------------------------------------------------------
-    // SPLASH + LORE + APP TRANSITIONS
-    // -------------------------------------------------------
-    // -------------------------------------------------------
-    // SPLASH + LORE + APP TRANSITIONS
-    // -------------------------------------------------------
     const loreLines = [
       "[FILE 01] Incoming signal anomaly recorded over the Pacific.",
       "[FILE 02] Frequency does not match any known broadcast, satellite, or military band.",
