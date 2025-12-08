@@ -46,7 +46,7 @@ router.get("/summary", authMiddleware, async (req, res) => {
 
     const user = userRes.rows[0];
     if (!user) {
-      return res.status(404).json({ error: "User not found." });
+      return res.status(404).json({ ok: false, error: "User not found." });
     }
 
     // Sector is derived in code, not stored in DB
@@ -90,6 +90,7 @@ router.get("/summary", authMiddleware, async (req, res) => {
     }
 
     return res.json({
+      ok: true,
       profile: {
         id: user.id,
         email: user.email,
@@ -106,11 +107,12 @@ router.get("/summary", authMiddleware, async (req, res) => {
       },
       logs
     });
+
   } catch (err) {
     console.error("/api/profile/summary error:", err);
     return res
       .status(500)
-      .json({ error: "Failed to load profile summary." });
+      .json({ok: false, error: "Failed to load profile summary." });
   }
 });
 
