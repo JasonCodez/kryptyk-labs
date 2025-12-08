@@ -25,11 +25,11 @@ function deriveSector(userId, email) {
 }
 
 // GET /api/profile/summary
-// GET /api/profile/summary
 router.get("/summary", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // Pull only columns that actually exist in your users table
     const userRes = await db.query(
       `SELECT id,
               email,
@@ -49,32 +49,45 @@ router.get("/summary", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "User not found." });
     }
 
-    // Sector is *derived*, not stored in DB
+    // Sector is derived in code, not stored in DB
     const sector = deriveSector(user.id, user.email);
-
-    // For now, XP and missions are virtual/placeholder
-    const xp = 0;
-    const missionsCompleted = 0;
 
     const clearance = (user.clearance_level || "INITIATED").toUpperCase();
 
-    // Use stored clearance_progress_pct if present, otherwise default to 5
+    // Use stored clearance_progress_pct or default to 5
     const rawProgress =
       typeof user.clearance_progress_pct === "number"
         ? user.clearance_progress_pct
         : 5;
-
     const progressPct = Math.max(0, Math.min(100, rawProgress));
 
-    // Recent logs
-    const logsRes = await db.query(
-      `SELECT event_type, message, created_at
-       FROM asset_access_logs
-       WHERE user_id = $1
-       ORDER BY created_at DESC
-       LIMIT 25`,
-      [user.id]
-    );
+    // XP / missions = placeholders for now
+    const xp = 0;
+    const missionsCompleted = 0;
+
+    // Try to load logs; if the table doesn't exist, just return an empty list
+    let logs = [];
+    try {
+      const logsRes = await db.query(
+        `SELECT event_type, message, created_at
+         FROM asset_access_logs
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 25`,
+        [user.id]
+      );
+      logs = logsRes.rows;
+    } catch (err) {
+      // 42P01 = table does not exist
+      if (err.code === "42P01") {
+        console.warn(
+          "[PROFILE] asset_access_logs table missing; returning empty logs."
+        );
+        logs = [];
+      } else {
+        throw err;
+      }
+    }
 
     return res.json({
       profile: {
@@ -82,16 +95,16 @@ router.get("/summary", authMiddleware, async (req, res) => {
         email: user.email,
         display_name: user.display_name,
         clearance_level: clearance,
+        motto: user.motto,
         created_at: user.created_at,
         last_login_at: user.last_login_at,
         sector,
-        motto: user.motto,
         xp,
         missions_completed: missionsCompleted,
         profile_image_url: null,
         clearance_progress_pct: progressPct
       },
-      logs: logsRes.rows
+      logs
     });
   } catch (err) {
     console.error("/api/profile/summary error:", err);
@@ -100,6 +113,7 @@ router.get("/summary", authMiddleware, async (req, res) => {
       .json({ error: "Failed to load profile summary." });
   }
 });
+
 
 
 // PUT /api/profile/settings (motto, maybe later more)
