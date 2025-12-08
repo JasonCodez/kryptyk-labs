@@ -112,36 +112,78 @@ router.get("/summary", authMiddleware, async (req, res) => {
     console.error("/api/profile/summary error:", err);
     return res
       .status(500)
-      .json({ok: false, error: "Failed to load profile summary." });
+      .json({ ok: false, error: "Failed to load profile summary." });
   }
 });
 
 
 
 // PUT /api/profile/settings (motto, maybe later more)
+// PUT /api/profile/settings (motto, display_name)
 router.put("/settings", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { motto } = req.body;
+    const { motto, display_name } = req.body || {};
 
-    await db.query("UPDATE users SET motto = $1 WHERE id = $2", [
-      motto || null,
-      userId
-    ]);
+    const updates = [];
+    const values = [];
+    let idx = 1;
 
-    await db.query(
-      "INSERT INTO asset_access_logs (user_id, event_type, message) VALUES ($1, $2, $3)",
-      [userId, "PROFILE_UPDATE", "Asset motto updated."]
-    );
+    // Motto update (optional)
+    if (typeof motto !== "undefined") {
+      updates.push(`motto = $${idx}`);
+      values.push(motto || null);
+      idx++;
+    }
+
+    // Display name update (optional)
+    if (typeof display_name !== "undefined") {
+      updates.push(`display_name = $${idx}`);
+      values.push(display_name || null);
+      idx++;
+    }
+
+    if (updates.length === 0) {
+      return res
+        .status(400)
+        .json({ ok: false, error: "No valid profile settings provided." });
+    }
+
+    values.push(userId);
+    const sql = `UPDATE users SET ${updates.join(", ")} WHERE id = $${idx}`;
+    await db.query(sql, values);
+
+    // Optional logging – skip cleanly if asset_access_logs doesn’t exist
+    try {
+      await db.query(
+        "INSERT INTO asset_access_logs (user_id, event_type, message) VALUES ($1, $2, $3)",
+        [
+          userId,
+          "PROFILE_UPDATE",
+          display_name
+            ? "Asset display name updated."
+            : "Asset motto updated."
+        ]
+      );
+    } catch (logErr) {
+      if (logErr.code === "42P01") {
+        console.warn(
+          "[PROFILE] asset_access_logs table missing during settings update; skipping log."
+        );
+      } else {
+        console.warn("[PROFILE] settings log insert failed:", logErr);
+      }
+    }
 
     return res.json({ ok: true });
   } catch (err) {
     console.error("/api/profile/settings error:", err);
     return res
       .status(500)
-      .json({ error: "Failed to update profile settings." });
+      .json({ ok: false, error: "Failed to update profile settings." });
   }
 });
+
 
 module.exports = router;
 

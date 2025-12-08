@@ -1,9 +1,9 @@
 // assets/js/profile.js
 (() => {
   const API_BASE =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:4000"
-    : "";
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? "http://localhost:4000"
+      : "";
 
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -68,6 +68,11 @@
     const mottoInput = document.getElementById("kl-motto-input");
     const mottoError = document.getElementById("kl-motto-error");
 
+    // Display name onboarding
+    const displayNameForm = document.getElementById("kl-display-name-form");
+    const displayNameInput = document.getElementById("kl-display-name-input");
+    const displayNameError = document.getElementById("kl-display-name-error");
+
     // Progress + logs + error
     const progressEl = document.getElementById("kl-clearance-progress");
     const progressLabelEl = document.getElementById(
@@ -127,7 +132,7 @@
 
           showError(
             data.error ||
-              "Unable to load asset profile. The lab console may be offline."
+            "Unable to load asset profile. The lab console may be offline."
           );
           return;
         }
@@ -136,13 +141,19 @@
         const logs = data.logs || [];
 
         const email = profile.email || "unknown@asset";
-        const displayName = profile.display_name || "UNSPECIFIED";
+        const displayName = (profile.display_name && profile.display_name.trim()) || "Asset";
         const clearanceRaw = profile.clearance_level || "INITIATED";
         const clearance = clearanceRaw.toUpperCase();
 
         // Core fields
         safeText(emailEl, email);
         safeText(nameEl, displayName);
+        if (displayNameInput) {
+          displayNameInput.value =
+            profile.display_name && profile.display_name.trim().length
+              ? profile.display_name
+              : "";
+        }
         safeText(clearanceEl, clearance);
         safeText(createdEl, formatDate(profile.created_at));
         safeText(lastLoginEl, formatDate(profile.last_login_at));
@@ -202,9 +213,8 @@
               const row = document.createElement("div");
               row.className = "kl-log-line";
               const when = formatDate(log.created_at);
-              row.textContent = `[${log.event_type || "EVENT"}] ${when} — ${
-                log.message || ""
-              }`;
+              row.textContent = `[${log.event_type || "EVENT"}] ${when} — ${log.message || ""
+                }`;
               logsContainer.appendChild(row);
             });
           }
@@ -263,6 +273,64 @@
         }
       });
     }
+    // Display name form handler
+    if (displayNameForm && displayNameInput) {
+      displayNameForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (displayNameError) displayNameError.textContent = "";
+
+        const value = displayNameInput.value.trim();
+
+        if (!value) {
+          if (displayNameError) {
+            displayNameError.textContent =
+              "Provide a name the lab can address you by.";
+          }
+          return;
+        }
+
+        if (value.length < 2 || value.length > 40) {
+          if (displayNameError) {
+            displayNameError.textContent =
+              "Display name must be between 2 and 40 characters.";
+          }
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE}/api/profile/settings`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ display_name: value })
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.ok) {
+            if (displayNameError) {
+              displayNameError.textContent =
+                data.error ||
+                "Unable to update display name. The lab console is unstable.";
+            }
+            return;
+          }
+
+          // Update UI + local storage
+          safeText(nameEl, value);
+          localStorage.setItem("kl_display_name", value);
+        } catch (err) {
+          console.error("Display name update error:", err);
+          if (displayNameError) {
+            displayNameError.textContent =
+              "Transmission failed. Try again in a moment.";
+          }
+        }
+      });
+    }
+
 
     // Kick it off
     loadProfile();
