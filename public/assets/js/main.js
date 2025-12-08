@@ -20,10 +20,6 @@
     const terminalCursor = document.getElementById("kl-terminal-cursor");
     const statusIndicator = document.getElementById("kl-status-indicator");
 
-    // Transition guard: ensure we only run the splash/app sequence once
-    let appTransitionStarted = false;
-
-
     const tabButtons = document.querySelectorAll(".kl-tab");
 
     // Signup forms
@@ -104,6 +100,9 @@
     let signupEmail = "";
     let signupKey = ""; // key that passed verification (Step 2)
     let resetEmailContext = "";
+        // Prevent running splash/app transition multiple times
+    let appTransitionStarted = false;
+
 
     // -------------------------------------------------------
     // SMALL UTILITIES
@@ -1223,12 +1222,6 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
       }
 
       // Session is valid
-      hydrateHeaderAndWelcome();
-
-      if (statusIndicator) {
-        statusIndicator.textContent = "STATUS: ACTIVE SESSION DETECTED";
-      }
-
       hydrateHeaderAndWelcome();
 
       if (statusIndicator) {
