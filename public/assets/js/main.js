@@ -100,7 +100,7 @@
     let signupEmail = "";
     let signupKey = ""; // key that passed verification (Step 2)
     let resetEmailContext = "";
-        // Prevent running splash/app transition multiple times
+    // Prevent running splash/app transition multiple times
     let appTransitionStarted = false;
 
 
@@ -515,7 +515,8 @@
       const interval = setInterval(() => {
         if (i >= bootLines.length) {
           clearInterval(interval);
-          window.location.href = "/orientation";
+          // IMPORTANT: no redirect here anymore.
+          // The caller (bootstrap) is responsible for showing the app.
           return;
         }
 
@@ -523,7 +524,6 @@
         i++;
       }, 500);
     }
-
 
     // -------------------------------------------------------
     // MISSIONS: STARTER PROTOCOL (BUTTON-ONLY)
