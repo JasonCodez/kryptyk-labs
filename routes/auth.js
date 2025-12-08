@@ -397,22 +397,22 @@ router.post("/verify-key", async (req, res) => {
 
 // ---------- COMPLETE SIGNUP (set password + create user) ----------
 router.post("/complete-signup", async (req, res) => {
-  try {
-    const { email, password, display_name } = req.body;
+  const { email, password, display_name } = req.body;
 
+  try {
     console.log("[COMPLETE-SIGNUP] incoming body:", {
       email,
       hasPassword: !!password,
       display_name
     });
 
-    // Basic validation
     if (!email || typeof email !== "string") {
       return res.status(400).json({
         ok: false,
-        error: "Email is required to finalize your asset profile."
+        error: "Email is required to complete signup."
       });
     }
+
     if (!password || typeof password !== "string" || password.length < 8) {
       return res.status(400).json({
         ok: false,
@@ -421,148 +421,146 @@ router.post("/complete-signup", async (req, res) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const trimmedName =
-      typeof display_name === "string" && display_name.trim().length > 0
-        ? display_name.trim()
-        : null;
-
-    // Optional: ensure there is at least one recent, *unused* access key for this email
-    // (We're not touching user_id or is_verified; those columns don't exist.)
-    const keyCheck = await db.query(
-      `
-      SELECT id, email, key_hash, created_at, expires_at, used, attempts
-      FROM access_keys
-      WHERE email = $1
-      ORDER BY created_at DESC
-      LIMIT 1
-      `,
-      [normalizedEmail]
-    );
-
-    if (!keyCheck.rows.length) {
+    if (!normalizedEmail) {
       return res.status(400).json({
+        ok: false,
+        error: "Email cannot be empty."
+      });
+    }
+
+    const client = await db.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // 1) Get a valid (unused, unexpired) access key for this email
+      const keyRes = await client.query(
+        `
+        SELECT id, used
+        FROM access_keys
+        WHERE email = $1
+          AND expires_at > NOW()
+        ORDER BY created_at DESC
+        LIMIT 1
+        `,
+        [normalizedEmail]
+      );
+
+      if (keyRes.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          ok: false,
+          error:
+            "No valid access key found for that email.\nRequest a new key and try again."
+        });
+      }
+
+      const keyRow = keyRes.rows[0];
+
+      if (keyRow.used) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          ok: false,
+          error: "This access key has already been used. Request a new key."
+        });
+      }
+
+      const accessKeyId = keyRow.id;
+
+      // 2) Hash password with env-configured rounds
+      const rounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
+      const passwordHash = await bcrypt.hash(password, rounds);
+
+      // 3) Upsert user
+      const userRes = await client.query(
+        `
+        INSERT INTO users (
+          email,
+          password_hash,
+          display_name,
+          clearance_level,
+          clearance_progress_pct,
+          created_at,
+          is_verified
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          'INITIATED',
+          5,
+          NOW(),
+          FALSE
+        )
+        ON CONFLICT (email) DO UPDATE
+        SET
+          password_hash = EXCLUDED.password_hash,
+          display_name = COALESCE(EXCLUDED.display_name, users.display_name),
+          updated_at = NOW()
+        RETURNING
+          id,
+          email,
+          display_name,
+          clearance_level,
+          clearance_progress_pct
+        `,
+        [normalizedEmail, passwordHash, display_name || null]
+      );
+
+      const user = userRes.rows[0];
+
+      // 4) Mark that access key as used
+      await client.query(
+        `
+        UPDATE access_keys
+        SET used = TRUE,
+            used_at = COALESCE(used_at, NOW())
+        WHERE id = $1
+        `,
+        [accessKeyId]
+      );
+
+      await client.query("COMMIT");
+
+      // 5) Issue JWT using the same helper as /login
+      const safeUser = {
+        id: user.id,
+        email: user.email,
+        display_name: user.display_name,
+        clearance_level: user.clearance_level,
+        clearance_progress_pct: user.clearance_progress_pct
+      };
+
+      const token = signToken(safeUser);
+
+      console.log("[COMPLETE-SIGNUP] success for:", safeUser.email);
+
+      return res.json({
+        ok: true,
+        message: "Signup complete.",
+        token,
+        user: safeUser
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error("complete-signup transaction error:", err);
+      return res.status(500).json({
         ok: false,
         error:
-          "No active access key found for that email. Request a new access fragment."
+          "The lab console failed to finalize your asset credentials. Try again in a moment."
       });
+    } finally {
+      client.release();
     }
-
-    const keyRow = keyCheck.rows[0];
-
-    if (keyRow.used) {
-      return res.status(400).json({
-        ok: false,
-        error: "That access fragment has already been used."
-      });
-    }
-
-    if (keyRow.expires_at && new Date(keyRow.expires_at) < new Date()) {
-      return res.status(400).json({
-        ok: false,
-        error: "That access fragment has expired. Request a fresh one."
-      });
-    }
-
-    // At this point, we *trust* that verify-key already validated the key.
-    // We don't re-ask for the key here — we only make sure a valid one exists.
-
-    // Check if a user already exists
-    const existing = await db.query(
-      `SELECT id, email, password_hash, display_name, clearance_level
-       FROM users
-       WHERE email = $1`,
-      [normalizedEmail]
-    );
-
-    if (existing.rows.length) {
-      // You can either treat this as an error or as "update password".
-      // I'll treat it as "asset already active":
-      return res.status(400).json({
-        ok: false,
-        error: "An asset profile already exists for this email. Try logging in."
-      });
-    }
-
-    // Hash password
-    const rounds = Number(process.env.BCRYPT_ROUNDS || 10);
-    const passwordHash = await bcrypt.hash(password, rounds);
-
-    // Insert user according to your schema
-    const insertedUser = await db.query(
-      `
-      INSERT INTO users (
-        email,
-        password_hash,
-        display_name,
-        clearance_level,
-        motto,
-        clearance_progress_pct,
-        created_at,
-        last_login_at
-      )
-      VALUES (
-        $1,
-        $2,
-        $3,
-        'INITIATED',
-        NULL,
-        5,
-        NOW(),
-        NOW()
-      )
-      RETURNING
-        id,
-        email,
-        display_name,
-        clearance_level,
-        motto,
-        clearance_progress_pct,
-        created_at,
-        last_login_at
-      `,
-      [normalizedEmail, passwordHash, trimmedName]
-    );
-
-    const user = insertedUser.rows[0];
-
-    // Mark the most recent access key as used
-    await db.query(
-      `
-      UPDATE access_keys
-      SET used = TRUE, used_at = NOW()
-      WHERE id = $1
-      `,
-      [keyRow.id]
-    );
-
-    // Issue JWT
-    // 5) Issue JWT (reuse the same helper as login)
-    const safeUser = {
-      id: user.id,
-      email: user.email,
-      display_name: user.display_name,
-      clearance_level: user.clearance_level,
-      clearance_progress_pct: user.clearance_progress_pct
-    };
-
-    const token = signToken(safeUser);
-
-    console.log("[COMPLETE-SIGNUP] success for:", safeUser.email);
-
-    return res.json({
-      ok: true,
-      message: "Signup complete.",
-      token,
-      user: safeUser
-    });
   } catch (err) {
-    console.error("complete-signup error:", err);
+    console.error("complete-signup outer error:", err);
     return res.status(500).json({
       ok: false,
-      error: "The lab console failed to finalize your asset credentials."
+      error: "The lab console is unstable. Please try again shortly."
     });
   }
 });
+
 
 
 
