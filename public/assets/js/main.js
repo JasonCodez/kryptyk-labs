@@ -239,6 +239,10 @@
         if (user.clearance_level) {
           localStorage.setItem("kl_clearance_level", user.clearance_level);
         }
+        if (data.user.display_name) {
+          localStorage.setItem("kl_display_name", data.user.display_name);
+        }
+
 
         return true;
       } catch (err) {
@@ -476,26 +480,39 @@
       }
     }
 
-    async function runResumeBoot() {
-      if (!terminalOutput) return;
+    function runResumeBoot() {
+      const displayName =
+        (localStorage.getItem("kl_display_name") || "").trim();
+      const nameForGate = displayName ? displayName.toUpperCase() : null;
 
-      const email = localStorage.getItem("kl_asset_email") || "classified";
+      const bootLines = [
+        "[CORE] entropy pool seeded.",
+        "[CORE] terminal online.",
+      ];
 
-      await typeLine("[CORE] existing session token detected.", {
-        system: true,
-        charDelay: 14
-      });
-      await sleep(200);
-      await typeLine(`[GATE] asset ${email} recognized.`, {
-        system: true,
-        charDelay: 14
-      });
-      await sleep(200);
-      await typeLine(
-        "[GATE] bypassing gate protocol and restoring orientation console…",
-        { system: true, charDelay: 14 }
-      );
+      if (nameForGate) {
+        bootLines.push(`[CORE] asset ${nameForGate} authenticated.`);
+      } else {
+        bootLines.push("[CORE] asset authentication restored.");
+      }
+
+      bootLines.push("[CORE] restoring assigned clearance channel...");
+      bootLines.push("[GATE] routing to orientation…");
+
+      // Render these into the mock terminal
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= bootLines.length) {
+          clearInterval(interval);
+          window.location.href = "/orientation";
+          return;
+        }
+
+        setMockInput(bootLines[i], false, true);
+        i++;
+      }, 500);
     }
+
 
     // -------------------------------------------------------
     // MISSIONS: STARTER PROTOCOL (BUTTON-ONLY)
@@ -940,15 +957,13 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             }
           );
           await sleep(180);
-          await typeLine(
-            "[GATE] authentication successful. opening lab shell…",
-            {
-              system: true,
-              charDelay: 14
-            }
-          );
+
+          // Now run the same boot sequence used for existing sessions,
+          // which includes the callsign from kl_display_name.
+          await runResumeBoot();
 
           beginAppTransition("STATUS: ACCESS GRANTED", { showLoreAfterSplash: true });
+
 
         } catch (err) {
           console.error("login error:", err);
