@@ -602,13 +602,11 @@ router.post("/login", async (req, res) => {
 
     const updatedRes = await db.query(
       `UPDATE users
-       SET is_verified        = TRUE,
-           clearance_level    = COALESCE(clearance_level, 'INITIATED'),
-           clearance_tier     = COALESCE(clearance_tier, 'INITIATE'),
-           clearance_sublevel = COALESCE(clearance_sublevel, 1),
-           last_login_at      = NOW()
+       SET is_verified     = TRUE,
+           clearance_level = COALESCE(clearance_level, 'INITIATED'),
+           last_login_at   = NOW()
        WHERE id = $1
-       RETURNING clearance_level, clearance_tier, clearance_sublevel`,
+       RETURNING clearance_level`,
       [user.id]
     );
 
@@ -618,12 +616,8 @@ router.post("/login", async (req, res) => {
       id: user.id,
       email: user.email,
       display_name: user.display_name || null,
-      clearance_level: updated.clearance_level || user.clearance_level || "INITIATED",
-      clearance_tier: updated.clearance_tier || user.clearance_tier || "INITIATE",
-      clearance_sublevel:
-        updated.clearance_sublevel ??
-        user.clearance_sublevel ??
-        1
+      clearance_level:
+        updated.clearance_level || user.clearance_level || "INITIATED"
     };
 
     const token = signToken(safeUser);
@@ -639,6 +633,7 @@ router.post("/login", async (req, res) => {
       token,
       user: safeUser
     });
+
   } catch (err) {
     console.error("login error:", err);
     return res.status(500).json({ error: "Internal server error." });
