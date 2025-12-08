@@ -12,12 +12,17 @@
     // -------------------------------------------------------
     const preloader = document.getElementById("kl-preloader");
     const splash = document.getElementById("kl-splash");
+    // Transition guard: ensure we only run the splash/app sequence once
     const app = document.getElementById("kl-app");
 
     const terminalOutput = document.getElementById("kl-terminal-output");
     const terminalInputMock = document.getElementById("kl-terminal-input-mock");
     const terminalCursor = document.getElementById("kl-terminal-cursor");
     const statusIndicator = document.getElementById("kl-status-indicator");
+
+    // Transition guard: ensure we only run the splash/app sequence once
+    let appTransitionStarted = false;
+
 
     const tabButtons = document.querySelectorAll(".kl-tab");
 
@@ -375,7 +380,14 @@
       }, 2600); // matches your splash animation duration
     }
 
-    function beginAppTransition(statusText, { showLoreAfterSplash = true } = {}) {
+    function beginAppTransition(
+      statusText,
+      { showLoreAfterSplash = true } = {}
+    ) {
+      // Prevent double-running the splash/app sequence
+      if (appTransitionStarted) return;
+      appTransitionStarted = true;
+
       if (statusIndicator && statusText) {
         statusIndicator.textContent = statusText;
       }
@@ -949,20 +961,34 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             statusIndicator.textContent = "STATUS: ACCESS GRANTED";
           }
 
+          // Figure out what to call the asset in the gate logs
+          const rawDisplayName =
+            (data.user && data.user.display_name) ||
+            localStorage.getItem("kl_display_name") ||
+            "";
+          const callsign = rawDisplayName.trim();
+          const assetLabel = callsign ? callsign.toUpperCase() : email;
+
           await typeLine(
-            "[CORE] credentials accepted. issuing session token…",
+            `[CORE] asset ${assetLabel} authenticated. issuing session token…`,
             {
               system: true,
               charDelay: 14
             }
           );
           await sleep(180);
+          await typeLine(
+            "[GATE] authentication successful. opening lab shell…",
+            {
+              system: true,
+              charDelay: 14
+            }
+          );
 
-          // Now run the same boot sequence used for existing sessions,
-          // which includes the callsign from kl_display_name.
-          await runResumeBoot();
+          beginAppTransition("STATUS: ACCESS GRANTED", {
+            showLoreAfterSplash: true
+          });
 
-          beginAppTransition("STATUS: ACCESS GRANTED", { showLoreAfterSplash: true });
 
 
         } catch (err) {
