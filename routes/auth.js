@@ -140,6 +140,27 @@ router.post("/request-access", async (req, res) => {
       });
     }
 
+    // 🔒 Block if this asset already has credentials
+    const existingUserRes = await db.query(
+      `
+      SELECT id, password_hash
+      FROM users
+      WHERE email = $1
+      LIMIT 1
+      `,
+      [normalizedEmail]
+    );
+
+    const existingUser = existingUserRes.rows[0];
+
+    if (existingUser && existingUser.password_hash) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "This asset already has clearance credentials. Use SIGN IN to access the lab."
+      });
+    }
+
     // 1) Generate a numeric 6-digit key, e.g. "482190"
     const rawKey = crypto
       .randomInt(0, 1_000_000)
@@ -212,9 +233,6 @@ router.post("/request-access", async (req, res) => {
     });
   }
 });
-
-
-
 
 // -------------------------------------------------------------
 // VERIFY KEY (Step 2)

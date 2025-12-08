@@ -603,8 +603,20 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
               data.error || "Unable to request access key at this time.";
             if (emailError) emailError.textContent = msg;
             setMockInput(`> error: ${msg}`, true);
+
+            // If this asset already has credentials, move them to SIGN IN
+            if (
+              msg.toLowerCase().includes("use sign in") &&
+              typeof setActiveTab === "function"
+            ) {
+              if (loginEmailInput) {
+                loginEmailInput.value = email;
+              }
+              setActiveTab("login");
+            }
             return;
           }
+
 
           // cache signup email for later steps
           signupEmail = email;
