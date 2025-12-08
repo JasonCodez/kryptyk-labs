@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kryptyk Labs — Asset Archive</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="/assets/css/base.css" />
+    <link rel="stylesheet" href="/assets/css/app.css" />
+    <link rel="stylesheet" href="/assets/css/profile.css" />
+  </head>
+  <body>
+    <div id="kl-root" class="kl-root">
+      <header class="kl-app-header">
+        <div class="kl-app-header-left">
+          <a href="/" class="kl-logo-link">
+            <span class="kl-logo-mark">KRYPTYK</span>
+            <span class="kl-logo-sub">LABS</span>
+          </a>
+        </div>
+        <div class="kl-app-header-right">
+          <div id="kl-header-asset-pill" class="kl-pill">
+            asset: unknown
+          </div>
+          <div id="kl-header-clearance-pill" class="kl-pill">
+            clearance: INITIATED
+          </div>
+          <button id="kl-logout-btn" class="kl-pill kl-pill-danger">
+            SIGN OUT
+          </button>
+        </div>
+      </header>
+
+      <div class="kl-app-shell">
+        <aside class="kl-app-nav">
+          <a href="/orientation" class="kl-nav-link">Orientation</a>
+          <a href="/profile" class="kl-nav-link">Asset Dossier</a>
+          <a href="/archive" class="kl-nav-link kl-nav-link-active">Archive</a>
+        </aside>
+
+        <main class="kl-app-main">
+          <!-- Left: archive list -->
+          <section class="kl-panel">
+            <div class="kl-panel-header">
+              <div class="kl-panel-title">Asset Archive</div>
+              <div class="kl-panel-subtitle">
+                All briefings and missions this asset has encountered.
+              </div>
+            </div>
+
+            <div id="kl-archive-error" class="kl-panel-error hidden"></div>
+
+            <div id="kl-archive-list" class="kl-archive-list">
+              <!-- populated by JS -->
+            </div>
+          </section>
+
+          <!-- Right: detail / helper text -->
+          <section class="kl-panel">
+            <div class="kl-panel-header">
+              <div class="kl-panel-title">Event Detail</div>
+            </div>
+            <div id="kl-archive-detail" class="kl-archive-detail">
+              <p class="kl-muted">
+                Select a briefing or mission from the archive to review its
+                intel, timestamps, and status.
+              </p>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="/assets/js/archive.js"></script>
+  </body>
+</html>

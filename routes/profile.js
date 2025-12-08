@@ -1,6 +1,21 @@
 // routes/profile.js
 const express = require("express");
 const db = require("../db");
+async function logAssetEvent(userId, eventType, message, meta) {
+  try {
+    await db.query(
+      `
+      INSERT INTO asset_access_logs (user_id, event_type, message, meta)
+      VALUES ($1, $2, $3, $4)
+      `,
+      [userId, eventType, message || null, meta || null]
+    );
+  } catch (err) {
+    // Don't crash the request if logging fails
+    console.warn("[LOG] failed to insert asset_access_logs row:", err.message);
+  }
+}
+
 const authMiddleware = require("../kryptyk-labs-api/middleware/auth"); // adjust path if needed
 
 const router = express.Router();
@@ -183,6 +198,50 @@ router.put("/settings", authMiddleware, async (req, res) => {
       .json({ ok: false, error: "Failed to update profile settings." });
   }
 });
+
+// GET /api/profile/archive
+// Returns archived events (briefings & missions) for the current asset
+router.get("/archive", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Only pull mission / briefing related events
+    const { rows } = await db.query(
+      `
+      SELECT
+        id,
+        event_type,
+        message,
+        meta,
+        created_at
+      FROM asset_access_logs
+      WHERE user_id = $1
+        AND event_type IN (
+          'BRIEFING_VIEW',
+          'BRIEFING_ACK',
+          'MISSION_UNLOCK',
+          'MISSION_START',
+          'MISSION_COMPLETE'
+        )
+      ORDER BY created_at DESC
+      LIMIT 200
+      `,
+      [userId]
+    );
+
+    return res.json({
+      ok: true,
+      events: rows
+    });
+  } catch (err) {
+    console.error("/api/profile/archive error:", err);
+    return res.status(500).json({
+      ok: false,
+      error: "Failed to load archive from the lab console."
+    });
+  }
+});
+
 
 
 module.exports = router;
