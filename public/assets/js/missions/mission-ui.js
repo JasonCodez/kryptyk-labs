@@ -1,5 +1,34 @@
 // assets/js/missions/mission-ui.js
 import { missions } from "./missions.js";
+const API_BASE = window.location.origin;
+
+async function sendMissionLog(eventType, missionId, title) {
+  const token = localStorage.getItem("kl_token");
+  if (!token) return;
+
+  try {
+    await fetch(`${API_BASE}/api/missions/log`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        event_type: eventType,
+        mission_id: missionId,
+        title
+      })
+    });
+  } catch (err) {
+    console.warn(
+      "[MISSIONS] failed to send mission log event:",
+      eventType,
+      missionId,
+      err
+    );
+  }
+}
+
 
 let modalEl = null;
 let titleEl = null;
@@ -71,6 +100,11 @@ function wireOnce() {
       logToEventStream(
         `[MISSION] ${id} acknowledged. Asset ready for next instructions.`
       );
+      // Archive: briefing acknowledged
+      const title = titleEl
+        ? (titleEl.textContent || "").trim()
+        : null;
+      sendMissionLog("BRIEFING_ACK", id, title);
       hideMissionModal();
     });
   }
@@ -122,4 +156,11 @@ export function openMission(missionId) {
   logToEventStream(
     `[MISSION] ${missionId || "UNKNOWN"} — mission briefing opened.`
   );
+    logToEventStream(
+    `[MISSION] ${missionId || "UNKNOWN"} — mission briefing opened.`
+  );
+
+  // Archive: briefing viewed
+  const title = titleEl ? (titleEl.textContent || "").trim() : null;
+  sendMissionLog("BRIEFING_VIEW", missionId || "UNKNOWN", title);
 }
