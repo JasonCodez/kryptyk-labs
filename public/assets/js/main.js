@@ -878,7 +878,10 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             system: true
           });
 
-          await beginAppTransition(data.user || null);
+          beginAppTransition("STATUS: ACCESS GRANTED", {
+            showLoreAfterSplash: true
+          });
+
         } catch (err) {
           console.error("complete-signup error:", err);
           const msg = "Gate service unavailable.";
@@ -1226,8 +1229,27 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
         statusIndicator.textContent = "STATUS: ACTIVE SESSION DETECTED";
       }
 
+      hydrateHeaderAndWelcome();
+
+      if (statusIndicator) {
+        statusIndicator.textContent = "STATUS: ACTIVE SESSION DETECTED";
+      }
+
+      // For existing sessions, just play the terminal copy and then show the app.
+      // Don't re-run the full splash transition here.
       await runResumeBoot();
-      beginAppTransition("STATUS: RESTORING ORIENTATION CONSOLE…");
+
+      // Hide gate + splash directly
+      if (preloader) {
+        preloader.style.display = "none";
+      }
+      if (splash) {
+        splash.classList.remove("kl-splash-active");
+        splash.style.display = "none";
+      }
+      if (app) {
+        app.classList.remove("hidden");
+      }
     })();
   });
 })();
