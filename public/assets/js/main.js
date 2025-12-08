@@ -157,22 +157,34 @@
 
     function hydrateHeaderAndWelcome() {
       const email = localStorage.getItem("kl_asset_email") || "";
-      const displayName =
-        localStorage.getItem("kl_display_name") || "Asset";
+      const rawDisplayName = localStorage.getItem("kl_display_name") || "";
+      const displayName = rawDisplayName.trim();
       const clearance =
         localStorage.getItem("kl_clearance_level") || "INITIATED";
 
+      // Top-right "ASSET: ..." pill
       if (assetEmailPill) {
-        assetEmailPill.textContent = email
-          ? `asset: ${email}`
-          : "asset: unknown";
+        let label;
+        if (displayName) {
+          // Prefer callsign when available
+          label = `asset: ${displayName.toUpperCase()}`;
+        } else if (email) {
+          // Fallback to email until they set a name
+          label = `asset: ${email}`;
+        } else {
+          label = "asset: unknown";
+        }
+        assetEmailPill.textContent = label;
       }
 
+      // Orientation welcome block
       if (welcomeName && welcomeClearance) {
-        welcomeName.textContent = displayName.toUpperCase();
+        const nameForWelcome = displayName || "Asset";
+        welcomeName.textContent = nameForWelcome.toUpperCase();
         welcomeClearance.textContent = clearance.toUpperCase();
       }
     }
+
 
     function logEventToDashboard(line) {
       if (!logWindow) return;

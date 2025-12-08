@@ -140,27 +140,37 @@
         const profile = data.profile || {};
         const logs = data.logs || [];
 
+        // Identity
         const email = profile.email || "unknown@asset";
-        const displayName = (profile.display_name && profile.display_name.trim()) || "Asset";
+        const rawDisplayName = profile.display_name || "";
+        const displayName =
+          (rawDisplayName && rawDisplayName.trim().length
+            ? rawDisplayName.trim()
+            : "Asset");
+
         const clearanceRaw = profile.clearance_level || "INITIATED";
         const clearance = clearanceRaw.toUpperCase();
 
-        // Core fields
+        // Core fields in the dossier body
         safeText(emailEl, email);
         safeText(nameEl, displayName);
-        if (displayNameInput) {
-          displayNameInput.value =
-            profile.display_name && profile.display_name.trim().length
-              ? profile.display_name
-              : "";
-        }
         safeText(clearanceEl, clearance);
         safeText(createdEl, formatDate(profile.created_at));
         safeText(lastLoginEl, formatDate(profile.last_login_at));
 
         // Header pills
-        safeText(emailPill, `asset: ${email}`);
+        let assetLabel;
+        if (rawDisplayName && rawDisplayName.trim().length) {
+          assetLabel = `asset: ${rawDisplayName.trim().toUpperCase()}`;
+        } else {
+          assetLabel = `asset: ${email}`;
+        }
+
+        safeText(emailPill, assetLabel);
         safeText(clearancePill, `clearance: ${clearance}`);
+
+        // (rest of loadProfile unchanged)
+
 
         // Badge ID: prefer backend field, fallback to id-based
         if (badgeIdEl) {
