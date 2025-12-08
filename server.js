@@ -80,6 +80,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth");
 // If you have a profile routes file, keep this; otherwise comment it out.
 const profileRoutes = require("./routes/profile");
+const missionRoutes = require("./routes/missions");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -97,6 +98,11 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 // if you have a profile router:
 app.use("/api/profile", profileRoutes);
+app.use("/api/missions", missionRoutes);
+
+
+
+
 
 // ---------- Static Frontend ----------
 const publicDir = path.join(__dirname, "public");
