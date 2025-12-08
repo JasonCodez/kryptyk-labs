@@ -474,36 +474,38 @@ router.post("/complete-signup", async (req, res) => {
       // 3) Upsert user with password + optional display_name
       const userRes = await client.query(
         `
-        INSERT INTO users (
-          email,
-          password_hash,
-          display_name,
-          clearance_level,
-          clearance_progress_pct,
-          created_at,
-          is_verified
-        )
-        VALUES (
-          $1,
-          $2,
-          $3,
-          'INITIATED',
-          5,
-          NOW(),
-          FALSE
-        )
-        ON CONFLICT (email) DO UPDATE
-        SET
-          password_hash = EXCLUDED.password_hash,
-          display_name = COALESCE(EXCLUDED.display_name, users.display_name),
-          updated_at = NOW()
-        RETURNING
-          id,
-          email,
-          display_name,
-          clearance_level,
-          clearance_progress_pct
-        `,
+  INSERT INTO users (
+    email,
+    password_hash,
+    display_name,
+    clearance_level,
+    clearance_progress_pct,
+    created_at,
+    last_login_at,
+    is_verified
+  )
+  VALUES (
+    $1,
+    $2,
+    $3,
+    'INITIATED',
+    5,
+    NOW(),
+    NULL,
+    TRUE
+  )
+  ON CONFLICT (email) DO UPDATE
+  SET
+    password_hash = EXCLUDED.password_hash,
+    display_name = COALESCE(EXCLUDED.display_name, users.display_name),
+    is_verified   = TRUE
+  RETURNING
+    id,
+    email,
+    display_name,
+    clearance_level,
+    clearance_progress_pct
+  `,
         [normalizedEmail, passwordHash, display_name || null]
       );
 
