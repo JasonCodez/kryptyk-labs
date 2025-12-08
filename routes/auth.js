@@ -428,7 +428,7 @@ router.post("/complete-signup", async (req, res) => {
       });
     }
 
-    const client = await db.connect();
+    const client = await db.pool.connect();
 
     try {
       await client.query("BEGIN");
