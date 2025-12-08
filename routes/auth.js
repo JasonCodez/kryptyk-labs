@@ -640,10 +640,21 @@ router.post("/login", async (req, res) => {
 
     const token = signToken(safeUser);
 
-    await db.query(
-      "INSERT INTO asset_access_logs (user_id, event_type, message) VALUES ($1, $2, $3)",
-      [user.id, "LOGIN", "Asset authenticated via gate."]
-    );
+    // Optional logging – skip cleanly if asset_access_logs doesn't exist yet
+    try {
+      await db.query(
+        "INSERT INTO asset_access_logs (user_id, event_type, message) VALUES ($1, $2, $3)",
+        [user.id, "LOGIN", "Asset authenticated via gate."]
+      );
+    } catch (logErr) {
+      if (logErr.code === "42P01") {
+        console.warn(
+          "[AUTH] asset_access_logs table missing on login; skipping log insert."
+        );
+      } else {
+        console.warn("[AUTH] login log insert failed:", logErr);
+      }
+    }
 
     return res.json({
       ok: true,
@@ -651,6 +662,7 @@ router.post("/login", async (req, res) => {
       token,
       user: safeUser
     });
+
 
   } catch (err) {
     console.error("login error:", err);
