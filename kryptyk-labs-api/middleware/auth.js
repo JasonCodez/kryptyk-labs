@@ -1,4 +1,4 @@
-// middleware/auth.js
+// kryptyk-labs-api/middleware/auth.js
 const jwt = require("jsonwebtoken");
 
 function authMiddleware(req, res, next) {
@@ -11,8 +11,10 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ error: "Missing auth token." });
   }
 
+  const secret = process.env.JWT_SECRET;
+
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, secret);
     // Attach to request so handlers can use it
     req.user = {
       id: payload.id,
@@ -26,3 +28,4 @@ function authMiddleware(req, res, next) {
 }
 
 module.exports = authMiddleware;
+

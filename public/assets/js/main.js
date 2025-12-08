@@ -800,13 +800,26 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             return;
           }
 
-          // Store token + email, then transition to app
+          // Store token + user info, then transition to app
           if (data.token) {
             localStorage.setItem("kl_token", data.token);
           }
-          if (data.user?.email) {
-            localStorage.setItem("kl_asset_email", data.user.email);
+
+          if (data.user) {
+            if (data.user.email) {
+              localStorage.setItem("kl_asset_email", data.user.email);
+            }
+            if (data.user.id) {
+              localStorage.setItem("kl_user_id", String(data.user.id));
+            }
+            if (data.user.display_name) {
+              localStorage.setItem("kl_display_name", data.user.display_name);
+            }
+            if (data.user.clearance_level) {
+              localStorage.setItem("kl_clearance_level", data.user.clearance_level);
+            }
           }
+
 
           appendLine("[GATE] asset credentials sealed. Clearance channel unlocked.", {
             system: true
