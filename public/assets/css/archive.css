@@ -1,0 +1,104 @@
+/* ============================================================
+   ARCHIVE PAGE — KRYPTYK LABS
+   Separate styling for archive.html only
+   ============================================================ */
+
+/* Layout tweaks */
+.kl-archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.kl-archive-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(88,112,196,0.45);
+  background: radial-gradient(circle at top left, #0a1024, #050814);
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.kl-archive-item:hover {
+  background: radial-gradient(circle at top left, #141c3c, #070b18);
+  border-color: rgba(120,140,210,0.7);
+}
+
+.kl-archive-item-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.kl-archive-item-type {
+  font-size: 0.78rem;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  color: rgba(170,200,255,0.8);
+  margin-bottom: 2px;
+}
+
+.kl-archive-item-message {
+  font-size: 0.85rem;
+  color: rgba(220,230,255,0.92);
+}
+
+.kl-archive-item-meta {
+  margin-top: 6px;
+  font-size: 0.74rem;
+  text-align: right;
+  color: rgba(150,160,190,0.65);
+}
+
+/* Detail section */
+.kl-archive-detail {
+  margin-top: 10px;
+  padding-right: 6px;
+}
+
+.kl-detail-block {
+  margin-bottom: 14px;
+}
+
+.kl-detail-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(150,170,215,0.7);
+  margin-bottom: 3px;
+}
+
+.kl-detail-value {
+  font-size: 0.9rem;
+  color: rgba(220,230,255,0.95);
+}
+
+/* Error block */
+#kl-archive-error {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(255,80,80,0.4);
+  background: rgba(255,40,40,0.1);
+  border-radius: 8px;
+  color: #ffb3b3;
+  font-size: 0.85rem;
+}
+
+/* Mobile refinements */
+@media (max-width: 900px) {
+
+  .kl-archive-item-message {
+    font-size: 0.9rem;
+  }
+
+  .kl-archive-item-type {
+    font-size: 0.7rem;
+  }
+
+  .kl-detail-value {
+    font-size: 0.92rem;
+  }
+
+}
