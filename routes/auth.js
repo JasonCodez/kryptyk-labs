@@ -220,6 +220,9 @@ router.post("/request-access", async (req, res) => {
 // VERIFY KEY (Step 2)
 // Expects the *real* 6-digit key, not the cipher
 // -------------------------------------------------------------
+// -------------------------------------------------------------
+// VERIFY ACCESS KEY
+// -------------------------------------------------------------
 const MAX_KEY_ATTEMPTS = 5;
 
 router.post("/verify-key", async (req, res) => {
@@ -243,7 +246,8 @@ router.post("/verify-key", async (req, res) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const submittedKey = key.trim(); // should be the 6-digit decrypted key
+    const submittedKey = key.trim(); // decrypted 6-digit key
+    const now = new Date();
 
     // Fetch the latest access_key row for this email
     const { rows } = await db.query(
@@ -257,19 +261,17 @@ router.post("/verify-key", async (req, res) => {
       [normalizedEmail]
     );
 
-    if (!rows.length) {
-      console.warn("[VERIFY-KEY] no access key row found for", normalizedEmail);
+    if (rows.length === 0) {
       return res.status(400).json({
         ok: false,
-        error: "Access key invalid or expired."
+        error:
+          "No access key found for that email. Request a new key from the gate."
       });
     }
 
     const keyRow = rows[0];
 
-    // Check used / attempts / expiry
-    const now = new Date();
-
+    // Hard stops
     if (keyRow.used) {
       return res.status(400).json({
         ok: false,
@@ -294,13 +296,14 @@ router.post("/verify-key", async (req, res) => {
     // Compare submitted key (plain 6-digit) with stored hash
     const isMatch = await bcrypt.compare(submittedKey, keyRow.key_hash);
 
-    console.log(
-      "[VERIFY-KEY] compare result",
-      { normalizedEmail, submittedKey, isMatch }
-    );
+    console.log("[VERIFY-KEY] compare result", {
+      normalizedEmail,
+      submittedKey,
+      isMatch
+    });
 
     if (!isMatch) {
-      // bump attempts
+      // bump attempts on failure
       await db.query(
         `UPDATE access_keys SET attempts = attempts + 1 WHERE id = $1`,
         [keyRow.id]
@@ -312,19 +315,7 @@ router.post("/verify-key", async (req, res) => {
       });
     }
 
-    // Mark this key as used
-    await db.query(
-      `
-      UPDATE access_keys
-      SET used = TRUE,
-          used_at = NOW(),
-          attempts = attempts + 1
-      WHERE id = $1
-      `,
-      [keyRow.id]
-    );
-
-    // At this point key is valid – either find or create the user record
+    // ✅ KEY IS VALID – ensure a user record exists (no password yet)
     const userResult = await db.query(
       `
       SELECT id, email, display_name, clearance_level, clearance_progress_pct
@@ -369,7 +360,8 @@ router.post("/verify-key", async (req, res) => {
       console.log("[VERIFY-KEY] created new user for", normalizedEmail);
     }
 
-    // TODO: you might keep origin_dossier flags etc. here if you want
+    // We do NOT mark the key as used here anymore.
+    // That happens only in /complete-signup after password is set.
 
     return res.json({
       ok: true,
@@ -386,10 +378,11 @@ router.post("/verify-key", async (req, res) => {
     console.error("verify-key error:", err);
     return res.status(500).json({
       ok: false,
-      error: "The lab console failed to verify that key."
+      error: "The gate subsystem glitched while verifying your key."
     });
   }
 });
+
 
 // -------------------------------------------------------------
 // COMPLETE SIGNUP (Step 3)
@@ -436,10 +429,9 @@ router.post("/complete-signup", async (req, res) => {
       // 1) Get a valid (unused, unexpired) access key for this email
       const keyRes = await client.query(
         `
-        SELECT id, used
+        SELECT id, used, expires_at
         FROM access_keys
         WHERE email = $1
-          AND expires_at > NOW()
         ORDER BY created_at DESC
         LIMIT 1
         `,
@@ -465,13 +457,21 @@ router.post("/complete-signup", async (req, res) => {
         });
       }
 
+      if (keyRow.expires_at && new Date(keyRow.expires_at) < new Date()) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          ok: false,
+          error: "This access key has expired. Request a new one from the gate."
+        });
+      }
+
       const accessKeyId = keyRow.id;
 
       // 2) Hash password with env-configured rounds
       const rounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
       const passwordHash = await bcrypt.hash(password, rounds);
 
-      // 3) Upsert user
+      // 3) Upsert user with password + optional display_name
       const userRes = await client.query(
         `
         INSERT INTO users (
@@ -520,9 +520,10 @@ router.post("/complete-signup", async (req, res) => {
         [accessKeyId]
       );
 
+      // 5) Commit the transaction
       await client.query("COMMIT");
 
-      // 5) Issue JWT using the same helper as /login
+      // 6) Issue JWT using the same helper as /login
       const safeUser = {
         id: user.id,
         email: user.email,
@@ -560,9 +561,6 @@ router.post("/complete-signup", async (req, res) => {
     });
   }
 });
-
-
-
 
 // -------------------------------------------------------------
 // LOGIN
