@@ -657,23 +657,23 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
           }
 
           // --- show cipher + drift from server ---
-          setMockInput("> cryptographic artifact issued.");
+          setMockInput("> Caesar cipher received. Standing by for decryption…");
 
           if (data.cipher) {
             appendLine(
-              `[GATE] cipher fragment received: ${data.cipher}`,
+              `[GATE] cipher received: ${data.cipher}`,
               { system: true }
             );
           } else {
             appendLine(
-              "[GATE] cipher fragment received: ??????",
+              "[GATE] cipher received: ??????",
               { system: true }
             );
           }
 
           if (typeof data.shift === "number") {
             appendLine(
-              `[HINT] numeric drift parameter: +${data.shift} applied to each digit.`,
+              `[HINT] Shift +${data.shift} applied to each digit.`,
               { system: true }
             );
           } else {
@@ -681,7 +681,7 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
           }
 
           await typeLine(
-            "[GATE] decrypt the fragment using the drift parameter, then continue to Step 2.",
+            "[GATE] decrypt the cipher, then continue to Step 2.",
             { system: true, charDelay: 14 }
           );
 
