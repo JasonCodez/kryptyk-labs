@@ -681,7 +681,7 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
           }
 
           await typeLine(
-            "[GATE] decrypt the cipher, then continue to Step 2.",
+            "[GATE] decode the cipher, then continue to Step 2.",
             { system: true, charDelay: 14 }
           );
 
