@@ -13,8 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const errorEl = document.getElementById("kl-archive-error");
 
   // Mission console (INITIATE-001)
-  const starterOpenBtn = document.getElementById("kl-starter-protocol-open");
-  const starterStatusEl = document.getElementById("kl-starter-protocol-status");
+  const starterOpenBtn = document.getElementById("kl-initiate-001-open");
+  const starterStatusEl = document.getElementById("kl-initiate-001-status");
 
   // Mission modal elements
   const missionModal = document.getElementById("kl-mission-modal");
