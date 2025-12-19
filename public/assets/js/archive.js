@@ -40,9 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
     title: "INITIATE-001 // PACKET PARSE",
     body:
       "Packet sync in progress…\n\n" +
-      "When the packet arrives, locate the NONCE, compute the checksum, and submit it as a 6-digit code.",
+      "When the packet arrives, locate the NONCE and submit it exactly as shown (6 digits).",
     hint:
-      "Checksum format: 6 digits (0-9). Locate NONCE in the packet, then compute the checksum and submit it."
+      "Response format: 6 digits. Locate NONCE in the packet and submit it exactly."
   };
 
   // Basic header hydrate
@@ -182,8 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "Mission: INITIATE-001 // PACKET PARSE\n\n" +
       "Objective:\n" +
       "1) Locate the NONCE inside the packet payload.\n" +
-      "2) Compute the checksum from that nonce.\n" +
-      "3) Submit the checksum as a 6-digit code.\n\n" +
+      "2) Submit the NONCE exactly as shown (6 digits).\n\n" +
       "PACKET:\n" +
       packetText +
       "\n"

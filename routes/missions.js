@@ -59,7 +59,7 @@ async function computeInitiate001Packet(userId) {
       target: "ASSET_VALIDATION",
       note: "Parse only what you are instructed to parse. Ignore noise.",
       rules: {
-        checksum: "sum(digits(nonce)) mod 10, repeated 6 times"
+        response: "submit the NONCE exactly as shown (6 digits)"
       }
     }
   };
@@ -533,7 +533,7 @@ router.post("/submit", authMiddleware, async (req, res) => {
           ok: true,
           mission_id: missionId,
           correct: false,
-          message: "Response format invalid. Expected a 6-digit checksum."
+          message: "Response format invalid. Expected the 6-digit NONCE."
         });
       }
 
@@ -542,15 +542,9 @@ router.post("/submit", authMiddleware, async (req, res) => {
         return res.status(404).json({ ok: false, error: "User not found." });
       }
 
-      const expected = computeChecksumFromNonce(result.nonce);
-      if (!expected) {
-        return res
-          .status(500)
-          .json({ ok: false, error: "Mission packet invalid." });
-      }
-
+      const expected = result.nonce;
       correct = submitted === expected;
-      incorrectMessage = "Incorrect checksum. Re-parse the packet and recompute.";
+      incorrectMessage = "Incorrect NONCE. Re-parse the packet and copy it exactly.";
     }
 
     if (!correct) {
