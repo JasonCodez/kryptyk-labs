@@ -12,9 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailEl = document.getElementById("kl-archive-detail");
   const errorEl = document.getElementById("kl-archive-error");
 
-  // Starter Protocol console
+  // Mission console (INITIATE-001)
   const starterOpenBtn = document.getElementById("kl-starter-protocol-open");
-  const starterBeaconEl = document.getElementById("kl-last-auth-beacon");
   const starterStatusEl = document.getElementById("kl-starter-protocol-status");
 
   // Mission modal elements
@@ -33,18 +32,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const STARTER_PROTOCOL_ID = "starter-protocol-01";
-  let starterProtocolCompleted = false;
-  const starterMission = {
-    id: STARTER_PROTOCOL_ID,
-    title: "Starter Protocol // INITIATE-01",
+  const INITIATE_001_ID = "initiate-001-packet-parse";
+  let initiate001Completed = false;
+
+  const initiate001Mission = {
+    id: INITIATE_001_ID,
+    title: "INITIATE-001 // PACKET PARSE",
     body:
-      "Welcome inside the Lab, asset.\n\n" +
-      "Your first live operation is observation under pressure.\n\n" +
-      "In the Mission Console on this page, locate the [GATE] line that shows your last successful authentication.\n" +
-      "Copy the beacon token exactly as displayed (it begins with SIG-), then submit it here.\n",
+      "Packet sync in progress…\n\n" +
+      "When the packet arrives, locate the NONCE, compute the checksum, and submit it as a 6-digit code.",
     hint:
-      "The token is shown in the Mission Console as: [GATE] last successful authentication: SIG-..."
+      "Checksum format: 6 digits (0-9). Locate NONCE in the packet, then compute the checksum and submit it."
   };
 
   // Basic header hydrate
@@ -87,10 +85,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setStarterProtocolCompletedUI() {
-    showStarterStatus("STATUS: VERIFIED — Starter Protocol completed.");
+    showStarterStatus("STATUS: VERIFIED — INITIATE-001 completed.");
     if (starterOpenBtn) {
       starterOpenBtn.disabled = true;
-      starterOpenBtn.textContent = "STARTER PROTOCOL VERIFIED";
+      starterOpenBtn.textContent = "INITIATE-001 VERIFIED";
     }
   }
 
@@ -112,9 +110,9 @@ document.addEventListener("DOMContentLoaded", () => {
     missionModal.setAttribute("data-mission-id", mission.id);
     missionModal.classList.remove("hidden");
 
-    if (mission.id === STARTER_PROTOCOL_ID && starterProtocolCompleted) {
+    if (mission.id === INITIATE_001_ID && initiate001Completed) {
       if (missionAnswerStatus) {
-        missionAnswerStatus.textContent = "Already verified. Starter Protocol is complete.";
+        missionAnswerStatus.textContent = "Already verified. INITIATE-001 is complete.";
         missionAnswerStatus.classList.remove("hidden");
       }
       if (missionAnswerInput) missionAnswerInput.disabled = true;
@@ -137,29 +135,11 @@ document.addEventListener("DOMContentLoaded", () => {
     clearMissionMessages();
   }
 
-  async function refreshStarterBeacon() {
-    if (!starterBeaconEl) return;
-    starterBeaconEl.textContent = "syncing…";
-    try {
-      const res = await fetch(`${API_BASE}/api/missions/starter-protocol`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data || !data.ok) {
-        starterBeaconEl.textContent = "unavailable";
-        return;
-      }
-      starterBeaconEl.textContent = data.beacon || "unavailable";
-    } catch (err) {
-      starterBeaconEl.textContent = "unavailable";
-    }
-  }
-
   async function refreshStarterProtocolStatus() {
     try {
       const res = await fetch(
         `${API_BASE}/api/missions/status?mission_id=${encodeURIComponent(
-          STARTER_PROTOCOL_ID
+          INITIATE_001_ID
         )}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -167,13 +147,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok || !data || !data.ok) return;
 
       if (data.completed) {
-        starterProtocolCompleted = true;
+        initiate001Completed = true;
         setStarterProtocolCompletedUI();
 
         const openMissionId = missionModal?.getAttribute("data-mission-id") || "";
-        if (openMissionId === STARTER_PROTOCOL_ID) {
+        if (openMissionId === INITIATE_001_ID) {
           if (missionAnswerStatus) {
-            missionAnswerStatus.textContent = "Already verified. Starter Protocol is complete.";
+            missionAnswerStatus.textContent = "Already verified. INITIATE-001 is complete.";
             missionAnswerStatus.classList.remove("hidden");
           }
           if (missionAnswerInput) missionAnswerInput.disabled = true;
@@ -183,6 +163,46 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       // non-fatal
     }
+  }
+
+  async function fetchInitiate001Packet() {
+    const res = await fetch(`${API_BASE}/api/missions/initiate-001-packet`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || !data.ok) {
+      return { ok: false, error: data?.error || "Unable to sync packet." };
+    }
+    return { ok: true, packet: data.packet };
+  }
+
+  function buildInitiate001Body(packet) {
+    const packetText = packet ? JSON.stringify(packet, null, 2) : "(packet unavailable)";
+    return (
+      "Mission: INITIATE-001 // PACKET PARSE\n\n" +
+      "Objective:\n" +
+      "1) Locate the NONCE inside the packet payload.\n" +
+      "2) Compute the checksum from that nonce.\n" +
+      "3) Submit the checksum as a 6-digit code.\n\n" +
+      "PACKET:\n" +
+      packetText +
+      "\n"
+    );
+  }
+
+  async function openInitiate001Modal() {
+    openMissionModal(initiate001Mission);
+    if (!missionBodyEl) return;
+
+    missionBodyEl.textContent = "Syncing packet…";
+    const result = await fetchInitiate001Packet();
+    if (!result.ok) {
+      missionBodyEl.textContent =
+        "Packet sync failed. Try again.\n\n" +
+        (result.error || "Unable to sync packet.");
+      return;
+    }
+    missionBodyEl.textContent = buildInitiate001Body(result.packet);
   }
 
   async function submitMissionAnswer(missionId, answer) {
@@ -345,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Wire Starter Protocol UI
   if (starterOpenBtn) {
     starterOpenBtn.addEventListener("click", () => {
-      openMissionModal(starterMission);
+      void openInitiate001Modal();
     });
   }
 
@@ -371,9 +391,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!missionId) return;
 
-      if (missionId === STARTER_PROTOCOL_ID && starterProtocolCompleted) {
+      if (missionId === INITIATE_001_ID && initiate001Completed) {
         if (missionAnswerStatus) {
-          missionAnswerStatus.textContent = "Already verified. Starter Protocol is complete.";
+          missionAnswerStatus.textContent = "Already verified. INITIATE-001 is complete.";
           missionAnswerStatus.classList.remove("hidden");
         }
         setStarterProtocolCompletedUI();
@@ -400,9 +420,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (data.already_completed) {
-          starterProtocolCompleted = true;
+          initiate001Completed = true;
           if (missionAnswerStatus) {
-            missionAnswerStatus.textContent = "Already verified. Starter Protocol is complete.";
+            missionAnswerStatus.textContent = "Already verified. INITIATE-001 is complete.";
             missionAnswerStatus.classList.remove("hidden");
           }
           setStarterProtocolCompletedUI();
@@ -411,10 +431,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Confirmation of success (requested)
         if (missionAnswerStatus) {
-          missionAnswerStatus.textContent = "Verified. Starter Protocol completed.";
+          missionAnswerStatus.textContent = "Verified. INITIATE-001 completed.";
           missionAnswerStatus.classList.remove("hidden");
         }
-        starterProtocolCompleted = true;
+        initiate001Completed = true;
         setStarterProtocolCompletedUI();
 
         // Update local storage + header pills
@@ -426,14 +446,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Refresh archive list so the completion event appears
         await loadArchive();
       } finally {
-        if (!starterProtocolCompleted) {
+        if (!initiate001Completed) {
           missionSubmitBtn.disabled = false;
         }
       }
     });
   }
 
-  void refreshStarterBeacon();
   void refreshStarterProtocolStatus();
   loadArchive();
 });

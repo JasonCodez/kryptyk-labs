@@ -82,19 +82,16 @@
           <div class="kl-panel-title">Event Detail</div>
         </div>
 
-        <!-- Starter Protocol mission console (moved from Orientation) -->
+        <!-- Mission console -->
         <div class="kl-detail-block">
           <div class="kl-detail-label">Mission Console</div>
-          <div class="kl-detail-value">Starter Protocol // INITIATE-01</div>
+          <div class="kl-detail-value">INITIATE-001 // PACKET PARSE</div>
           <div class="kl-muted">
-            Read the beacon token in the line below, then submit it as your response.
-          </div>
-          <div class="kl-detail-value" style="margin-top: 8px; font-family: DM Mono, ui-monospace, monospace;">
-            [GATE] last successful authentication: <span id="kl-last-auth-beacon">syncing…</span>
+            Open the briefing, locate the NONCE in the packet, compute the checksum, and submit it as your response.
           </div>
           <div id="kl-starter-protocol-status" class="kl-muted hidden" style="margin-top: 8px;"></div>
           <button id="kl-starter-protocol-open" class="kl-btn kl-btn-primary" style="margin-top: 10px;">
-            OPEN STARTER PROTOCOL
+            OPEN INITIATE-001
           </button>
         </div>
 
@@ -108,7 +105,7 @@
     </main>
   </div>
 
-  <!-- MISSION MODAL (Starter Protocol) -->
+  <!-- MISSION MODAL -->
   <div id="kl-mission-modal" class="kl-mission-modal hidden">
     <div class="kl-mission-dialog">
       <div class="kl-mission-header">

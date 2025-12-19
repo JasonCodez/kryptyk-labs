@@ -11,7 +11,8 @@
     "migrate:dedupe-display-names": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_dedupe_display_names.sql",
     "migrate:unique-display-name": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_unique_display_name.sql",
     "migrate:access-keys-reset": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_access_keys_reset_support.sql",
-    "migrate:security-question-reset": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_security_question_reset.sql"
+    "migrate:security-question-reset": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_security_question_reset.sql",
+    "migrate:profile-photo": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_profile_photo.sql"
   },
   "keywords": [],
   "author": "",

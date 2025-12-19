@@ -1,6 +1,9 @@
 // routes/profile.js
 const express = require("express");
 const db = require("../db");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 const {
   clearanceForSuccessfulMissions,
   progressPctToNextTier
@@ -23,6 +26,37 @@ async function logAssetEvent(userId, eventType, message, meta) {
 const authMiddleware = require("../kryptyk-labs-api/middleware/auth"); // adjust path if needed
 
 const router = express.Router();
+
+const PROFILE_PHOTO_DIR = path.join(__dirname, "..", "uploads", "profile-photos");
+
+function safeUnlink(filePath) {
+  try {
+    fs.unlinkSync(filePath);
+  } catch {
+    // best-effort
+  }
+}
+
+const uploadProfilePhoto = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, PROFILE_PHOTO_DIR);
+    },
+    filename: (req, file, cb) => {
+      const userId = req.user?.id || "unknown";
+      const ext = path.extname(file.originalname || "").toLowerCase();
+      const safeExt = ext && ext.length <= 10 ? ext : "";
+      cb(null, `user_${userId}_${Date.now()}${safeExt}`);
+    }
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  },
+  fileFilter: (req, file, cb) => {
+    const ok = typeof file.mimetype === "string" && file.mimetype.startsWith("image/");
+    cb(ok ? null : new Error("Only image uploads are allowed."), ok);
+  }
+});
 
 // Helper: deterministic sector if null
 function deriveSector(userId, email) {
@@ -57,7 +91,8 @@ router.get("/summary", authMiddleware, async (req, res) => {
               motto,
               clearance_progress_pct,
               created_at,
-              last_login_at
+              last_login_at,
+              profile_photo_path
        FROM users
        WHERE id = $1`,
       [userId]
@@ -126,6 +161,11 @@ router.get("/summary", authMiddleware, async (req, res) => {
       }
     }
 
+    const profileImageUrl =
+      user.profile_photo_path && String(user.profile_photo_path).trim().length
+        ? `/uploads/${String(user.profile_photo_path).replace(/^\/+/g, "")}`
+        : null;
+
     return res.json({
       ok: true,
       profile: {
@@ -139,7 +179,7 @@ router.get("/summary", authMiddleware, async (req, res) => {
         sector,
         xp,
         missions_completed: missionsCompleted,
-        profile_image_url: null,
+        profile_image_url: profileImageUrl,
         clearance_progress_pct: progressPct
       },
       logs
@@ -152,6 +192,76 @@ router.get("/summary", authMiddleware, async (req, res) => {
       .json({ ok: false, error: "Failed to load profile summary." });
   }
 });
+
+// POST /api/profile/photo
+// Multipart form-data: field name "photo"
+router.post(
+  "/photo",
+  authMiddleware,
+  (req, res) => {
+    // Ensure uploads dir exists (safe on Windows + *nix)
+    try {
+      fs.mkdirSync(PROFILE_PHOTO_DIR, { recursive: true });
+    } catch {
+      // ignore
+    }
+
+    uploadProfilePhoto.single("photo")(req, res, async (err) => {
+      if (err) {
+        const msg =
+          err.message || "Unable to upload photo. Ensure the file is an image.";
+        return res.status(400).json({ ok: false, error: msg });
+      }
+
+      if (!req.file) {
+        return res
+          .status(400)
+          .json({ ok: false, error: "No photo file received." });
+      }
+
+      const userId = req.user.id;
+      const relativePath = path.posix.join(
+        "profile-photos",
+        req.file.filename
+      );
+
+      try {
+        // Delete previous photo file (best-effort) to avoid orphaned uploads
+        const prev = await db.query(
+          "SELECT profile_photo_path FROM users WHERE id = $1",
+          [userId]
+        );
+        const prevPath = prev.rows[0]?.profile_photo_path;
+        if (prevPath && typeof prevPath === "string" && prevPath.trim().length) {
+          const absolutePrev = path.join(__dirname, "..", "uploads", prevPath);
+          safeUnlink(absolutePrev);
+        }
+
+        await db.query(
+          "UPDATE users SET profile_photo_path = $1 WHERE id = $2",
+          [relativePath, userId]
+        );
+
+        await logAssetEvent(
+          userId,
+          "PROFILE_PHOTO_UPDATE",
+          "Asset profile photo updated.",
+          { file: req.file.filename, size: req.file.size }
+        );
+
+        return res.json({
+          ok: true,
+          profile_image_url: `/uploads/${relativePath}`
+        });
+      } catch (e) {
+        console.error("/api/profile/photo error:", e);
+        return res
+          .status(500)
+          .json({ ok: false, error: "Failed to save profile photo." });
+      }
+    });
+  }
+);
 
 
 

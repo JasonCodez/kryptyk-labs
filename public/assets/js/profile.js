@@ -61,6 +61,19 @@
     const createdEl = document.getElementById("kl-profile-created");
     const lastLoginEl = document.getElementById("kl-profile-last-login");
 
+    // ID badge
+    const idNameEl = document.getElementById("kl-id-name");
+    const idBadgeEl = document.getElementById("kl-id-badge");
+    const idEmailEl = document.getElementById("kl-id-email");
+    const idClearanceEl = document.getElementById("kl-id-clearance");
+    const idIssuedEl = document.getElementById("kl-id-issued");
+    const idLastLoginEl = document.getElementById("kl-id-last-login");
+
+    const idPhotoImg = document.getElementById("kl-id-photo");
+    const idPhotoFallback = document.getElementById("kl-id-photo-fallback");
+    const idPhotoInput = document.getElementById("kl-id-photo-input");
+    const idPhotoStatus = document.getElementById("kl-id-photo-status");
+
     // Motto
     const mottoDisplayEl = document.getElementById(
       "kl-profile-motto-display"
@@ -101,6 +114,39 @@
       } catch {
         return "—";
       }
+    }
+
+    function setIdPhotoStatus(msg) {
+      if (!idPhotoStatus) return;
+      idPhotoStatus.textContent = msg || "";
+    }
+
+    function initialsFromName(name) {
+      const raw = String(name || "").trim();
+      if (!raw) return "AS";
+      const parts = raw.split(/\s+/).filter(Boolean);
+      const a = (parts[0] || "A").slice(0, 1);
+      const b = (parts[1] || parts[0] || "S").slice(0, 1);
+      return (a + b).toUpperCase();
+    }
+
+    function setBadgePhoto(url, displayName) {
+      if (!idPhotoImg || !idPhotoFallback) return;
+
+      const fallback = initialsFromName(displayName);
+      idPhotoFallback.textContent = fallback;
+
+      const cleanUrl = url && String(url).trim().length ? String(url).trim() : "";
+      if (!cleanUrl) {
+        idPhotoImg.style.display = "none";
+        idPhotoFallback.style.display = "";
+        idPhotoImg.removeAttribute("src");
+        return;
+      }
+
+      idPhotoImg.style.display = "";
+      idPhotoFallback.style.display = "none";
+      idPhotoImg.src = cleanUrl;
     }
 
     function showError(msg) {
@@ -182,6 +228,13 @@
         safeText(createdEl, formatDate(profile.created_at));
         safeText(lastLoginEl, formatDate(profile.last_login_at));
 
+        // ID badge fields
+        safeText(idNameEl, displayName.toUpperCase());
+        safeText(idEmailEl, email);
+        safeText(idIssuedEl, formatDate(profile.created_at));
+        safeText(idLastLoginEl, formatDate(profile.last_login_at));
+        if (idClearanceEl) idClearanceEl.textContent = clearance;
+
         // Header pills
         let assetLabel;
         if (rawDisplayName && rawDisplayName.trim().length) {
@@ -214,7 +267,13 @@
           }
 
           safeText(badgeIdEl, badge);
+
+          // Mirror to ID badge
+          safeText(idBadgeEl, badge);
         }
+
+        // Photo
+        setBadgePhoto(profile.profile_image_url, displayName);
 
         // Motto
         safeText(
@@ -258,6 +317,47 @@
         showError(
           "Profile console unreachable. Check that the lab server is online."
         );
+      }
+    }
+
+    async function uploadIdPhoto(file) {
+      if (!file) return;
+      if (!file.type || !String(file.type).startsWith("image/")) {
+        setIdPhotoStatus("Please choose an image file.");
+        return;
+      }
+
+      setIdPhotoStatus("Uploading…");
+
+      const body = new FormData();
+      body.append("photo", file);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/profile/photo`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data.ok) {
+          setIdPhotoStatus(data.error || "Upload failed.");
+          return;
+        }
+
+        const url = String(data.profile_image_url || "").trim();
+        if (url) {
+          // cache-bust to ensure immediate refresh
+          const busted = url.includes("?") ? `${url}&v=${Date.now()}` : `${url}?v=${Date.now()}`;
+          setBadgePhoto(busted, idNameEl?.textContent || "ASSET");
+        }
+        setIdPhotoStatus("Photo updated.");
+      } catch (err) {
+        console.error("Photo upload error:", err);
+        setIdPhotoStatus("Upload failed. Check server connection.");
       }
     }
 
@@ -326,6 +426,17 @@
           console.warn("[NOTEPAD] failed to write localStorage:", err);
           setNotepadStatus("Unable to save notes locally.");
         }
+      });
+    }
+
+    // ID photo upload
+    if (idPhotoInput) {
+      idPhotoInput.addEventListener("change", async () => {
+        setIdPhotoStatus("");
+        const file = idPhotoInput.files && idPhotoInput.files[0];
+        await uploadIdPhoto(file);
+        // allow selecting the same file again
+        idPhotoInput.value = "";
       });
     }
     // Display name form handler

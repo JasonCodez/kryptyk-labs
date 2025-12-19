@@ -72,6 +72,66 @@
             inside Kryptyk Labs. Some fields may be redacted depending on your tier.
           </p>
 
+          <!-- Digital ID Badge (drivers-license sized) -->
+          <div class="kl-idcard-section">
+            <div class="kl-idcard" aria-label="Digital ID Badge">
+              <img class="kl-id-logo" src="img/logo-mark.png" alt="Kryptyk Labs" />
+              <div class="kl-idcard-strip" aria-hidden="true"></div>
+
+              <div class="kl-idcard-inner">
+                <div class="kl-idcard-left">
+                  <div class="kl-id-avatar">
+                    <img id="kl-id-photo" class="kl-id-photo" alt="Asset photo" style="display:none;" />
+                    <span id="kl-id-photo-fallback">AS</span>
+                  </div>
+
+                  <div class="kl-id-tagline">DIGITAL ID</div>
+
+                  <label class="kl-btn kl-btn-xs kl-btn-ghost" for="kl-id-photo-input">
+                    UPLOAD PHOTO
+                  </label>
+                  <input id="kl-id-photo-input" type="file" accept="image/*" style="display:none;" />
+
+                  <div id="kl-id-photo-status" class="kl-form-hint"></div>
+                </div>
+
+                <div class="kl-idcard-right">
+                  <div class="kl-id-header-row">
+                    <div class="kl-id-label">NAME</div>
+                    <div id="kl-id-name" class="kl-id-value">ASSET</div>
+                  </div>
+
+                  <div class="kl-id-row">
+                    <div class="kl-id-label">BADGE</div>
+                    <div id="kl-id-badge" class="kl-id-value">KRY-0000-A</div>
+                  </div>
+
+                  <div class="kl-id-row">
+                    <div class="kl-id-label">EMAIL</div>
+                    <div id="kl-id-email" class="kl-id-value">unknown@asset</div>
+                  </div>
+
+                  <div class="kl-id-row">
+                    <div class="kl-id-label">CLEARANCE</div>
+                    <div class="kl-id-value">
+                      <span id="kl-id-clearance" class="kl-id-clearance">INITIATED</span>
+                    </div>
+                  </div>
+
+                  <div class="kl-id-row-small">
+                    <div class="kl-id-label">ISSUED</div>
+                    <div id="kl-id-issued" class="kl-id-value">—</div>
+                  </div>
+
+                  <div class="kl-id-row-small">
+                    <div class="kl-id-label">LAST LOGIN</div>
+                    <div id="kl-id-last-login" class="kl-id-value">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <ul class="kl-panel-list">
             <li>
               <strong>Asset Email:</strong>

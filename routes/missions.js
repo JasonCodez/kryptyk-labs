@@ -13,6 +13,62 @@ const {
 const router = express.Router();
 
 const STARTER_PROTOCOL_ID = "starter-protocol-01";
+const INITIATE_001_ID = "initiate-001-packet-parse";
+
+function computeChecksumFromNonce(nonce) {
+  const digits = String(nonce || "").replace(/\D/g, "").split("");
+  if (!digits.length) return null;
+  const sum = digits.reduce((acc, d) => acc + Number(d), 0);
+  const checkDigit = String(sum % 10);
+  return checkDigit.repeat(6);
+}
+
+async function computeInitiate001Packet(userId) {
+  const { rows } = await db.query(
+    "SELECT id, email, last_login_at, created_at FROM users WHERE id = $1",
+    [userId]
+  );
+  const user = rows[0];
+  if (!user) return null;
+
+  const secret =
+    process.env.MISSION_SECRET || process.env.JWT_SECRET || "changeme";
+
+  const baseTime = user.last_login_at || user.created_at;
+  const base = `${user.id}|${user.email}|${new Date(baseTime).toISOString()}|INITIATE_001`;
+  const hex = crypto.createHmac("sha256", secret).update(base).digest("hex");
+  const n = Number.parseInt(hex.slice(0, 12), 16) % 1000000;
+  const nonce = String(n).padStart(6, "0");
+
+  const packet = {
+    proto: "BG/1.0",
+    channel: "BLACK_GLASS",
+    frame: "HANDSHAKE",
+    route: "C2/ORIENT",
+    ts_utc: new Date().toISOString(),
+    seq: hex.slice(12, 18).toUpperCase(),
+    nonce,
+    noise: {
+      jitter_ms: (Number.parseInt(hex.slice(18, 20), 16) % 27) + 3,
+      ecc: hex.slice(20, 28).toUpperCase(),
+      relay: `RLY-${hex.slice(28, 32).toUpperCase()}`,
+      padding: hex.slice(32, 48)
+    },
+    payload: {
+      op: "CHALLENGE",
+      target: "ASSET_VALIDATION",
+      note: "Parse only what you are instructed to parse. Ignore noise.",
+      rules: {
+        checksum: "sum(digits(nonce)) mod 10, repeated 6 times"
+      }
+    }
+  };
+
+  return {
+    nonce,
+    packet
+  };
+}
 
 async function computeStarterProtocolBeacon(userId) {
   const { rows } = await db.query(
@@ -145,6 +201,29 @@ router.get("/starter-protocol", authMiddleware, async (req, res) => {
     return res
       .status(500)
       .json({ ok: false, error: "Failed to load beacon." });
+  }
+});
+
+/**
+ * GET /api/missions/initiate-001-packet
+ * Returns the packet used for INITIATE-001 // PACKET PARSE.
+ */
+router.get("/initiate-001-packet", authMiddleware, async (req, res) => {
+  try {
+    const result = await computeInitiate001Packet(req.user.id);
+    if (!result) {
+      return res.status(404).json({ ok: false, error: "User not found." });
+    }
+    return res.json({
+      ok: true,
+      mission_id: INITIATE_001_ID,
+      packet: result.packet
+    });
+  } catch (err) {
+    console.error("/api/missions/initiate-001-packet error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, error: "Failed to load mission packet." });
   }
 });
 
@@ -403,11 +482,9 @@ router.post("/submit", authMiddleware, async (req, res) => {
     return res.status(400).json({ ok: false, error: "answer is required." });
   }
 
-  if (missionId !== STARTER_PROTOCOL_ID) {
-    return res.status(400).json({
-      ok: false,
-      error: "Unsupported mission_id for submission."
-    });
+  const supported = new Set([STARTER_PROTOCOL_ID, INITIATE_001_ID]);
+  if (!supported.has(missionId)) {
+    return res.status(400).json({ ok: false, error: "Unsupported mission_id for submission." });
   }
 
   try {
@@ -438,12 +515,43 @@ router.post("/submit", authMiddleware, async (req, res) => {
       });
     }
 
-    const expected = await computeStarterProtocolBeacon(userId);
-    if (!expected) {
-      return res.status(404).json({ ok: false, error: "User not found." });
+    let correct = false;
+    let incorrectMessage = "Incorrect answer.";
+
+    if (missionId === STARTER_PROTOCOL_ID) {
+      const expected = await computeStarterProtocolBeacon(userId);
+      if (!expected) {
+        return res.status(404).json({ ok: false, error: "User not found." });
+      }
+      correct = submitted.toUpperCase() === expected.toUpperCase();
+      incorrectMessage = "Incorrect answer. Re-check the Event Stream.";
     }
 
-    const correct = submitted.toUpperCase() === expected.toUpperCase();
+    if (missionId === INITIATE_001_ID) {
+      if (!/^\d{6}$/.test(submitted)) {
+        return res.json({
+          ok: true,
+          mission_id: missionId,
+          correct: false,
+          message: "Response format invalid. Expected a 6-digit checksum."
+        });
+      }
+
+      const result = await computeInitiate001Packet(userId);
+      if (!result) {
+        return res.status(404).json({ ok: false, error: "User not found." });
+      }
+
+      const expected = computeChecksumFromNonce(result.nonce);
+      if (!expected) {
+        return res
+          .status(500)
+          .json({ ok: false, error: "Mission packet invalid." });
+      }
+
+      correct = submitted === expected;
+      incorrectMessage = "Incorrect checksum. Re-parse the packet and recompute.";
+    }
 
     if (!correct) {
       await logAssetEvent(
@@ -457,7 +565,7 @@ router.post("/submit", authMiddleware, async (req, res) => {
         ok: true,
         mission_id: missionId,
         correct: false,
-        message: "Incorrect answer. Re-check the Event Stream."
+        message: incorrectMessage
       });
     }
 

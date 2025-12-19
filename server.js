@@ -94,6 +94,9 @@ app.use(cors({
 
 app.use(express.json());
 
+// Serve uploaded assets (e.g., profile photos)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // ---------- API Routes ----------
 app.use("/api/auth", authRoutes);
 // if you have a profile router:
