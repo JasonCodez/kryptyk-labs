@@ -11,7 +11,7 @@
 
     // If there is no token at all, bounce back to the gate
     if (!token) {
-      window.location.href = "index.html";
+      window.location.href = "login.html";
       return;
     }
 
@@ -23,7 +23,8 @@
       localStorage.removeItem("kl_user_id");
       localStorage.removeItem("kl_display_name");
       localStorage.removeItem("kl_clearance_level");
-      window.location.href = "index.html";
+      localStorage.removeItem("kl_debrief_seen");
+      window.location.href = "login.html";
     }
 
     // Header logout buttons

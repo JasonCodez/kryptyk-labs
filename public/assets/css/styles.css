@@ -1,20 +1,20 @@
 /* =========================================================
-   KRYPTYK LABS — GLOBAL + GATE + DASHBOARD STYLES
+  KRYPTYK LABS — GLOBAL + GATE + DASHBOARD STYLES (THEME: GLASS TERMINAL)
    (Index / main app ONLY — no profile page specifics)
    ========================================================= */
 
 /* -------- Theme Tokens -------- */
 :root {
-  --kl-bg: #03050a;
-  --kl-bg-alt: #060916;
-  --kl-panel: rgba(6, 10, 22, 0.92);
-  --kl-border-subtle: rgba(136, 163, 255, 0.22);
-  --kl-accent: #7aa2ff;
-  --kl-accent-soft: rgba(122, 162, 255, 0.09);
-  --kl-accent-strong: #7efad1;
+  --kl-bg: #06070b;
+  --kl-bg-alt: #0b0d14;
+  --kl-panel: rgba(12, 14, 20, 0.62);
+  --kl-border-subtle: rgba(255, 255, 255, 0.14);
+  --kl-accent: #7ef9ff;
+  --kl-accent-soft: rgba(126, 249, 255, 0.09);
+  --kl-accent-strong: #7ef9ff;
   --kl-danger: #ff4b6a;
-  --kl-text-main: #eef2ff;
-  --kl-text-muted: rgba(238, 242, 255, 0.62);
+  --kl-text-main: rgba(255, 255, 255, 0.92);
+  --kl-text-muted: rgba(255, 255, 255, 0.62);
   --kl-radius-lg: 16px;
   --kl-radius-md: 12px;
   --kl-radius-pill: 999px;
@@ -28,12 +28,55 @@
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 12% 10%, rgba(122, 162, 255, 0.14), transparent 48%),
-    radial-gradient(circle at 82% 62%, rgba(126, 250, 209, 0.07), transparent 52%),
-    radial-gradient(circle at bottom, rgba(0, 0, 0, 0.7), transparent 55%),
+    radial-gradient(circle at 12% 10%, rgba(126, 249, 255, 0.16), transparent 52%),
+    radial-gradient(circle at 82% 62%, rgba(255, 255, 255, 0.08), transparent 60%),
+    radial-gradient(circle at bottom, rgba(0, 0, 0, 0.72), transparent 58%),
     linear-gradient(180deg, var(--kl-bg-alt), var(--kl-bg));
   color: var(--kl-text-main);
   font-family: var(--kl-font-sans);
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.22;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 0px,
+      rgba(255, 255, 255, 0.02) 1px,
+      rgba(0, 0, 0, 0) 5px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 6px,
+      rgba(0, 0, 0, 0.22) 7px
+    );
+  mix-blend-mode: overlay;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(126, 249, 255, 0.12), transparent 56%),
+    radial-gradient(circle at 84% 62%, rgba(255, 255, 255, 0.06), transparent 68%),
+    radial-gradient(circle at center, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.72) 78%);
+  opacity: 0.95;
+  mix-blend-mode: screen;
+}
+
+::selection {
+  background: rgba(126, 249, 255, 0.22);
+  color: rgba(0, 0, 0, 0.92);
 }
 
 .hidden {
@@ -52,19 +95,19 @@ body {
   justify-content: center;
   padding: 32px 16px;
   background:
-    radial-gradient(circle at top, rgba(88, 110, 255, 0.16), transparent 55%),
-    radial-gradient(circle at bottom, rgba(0, 255, 195, 0.06), transparent 55%),
-    #020308;
+    radial-gradient(circle at top, rgba(126, 249, 255, 0.16), transparent 55%),
+    radial-gradient(circle at bottom, rgba(126, 249, 255, 0.08), transparent 55%),
+    var(--kl-bg);
   z-index: 100;
 }
 
 .kl-preloader-inner {
   width: 100%;
   max-width: 720px;
-  background: linear-gradient(145deg, rgba(7, 12, 30, 0.96), rgba(2, 5, 15, 0.98));
+  background: linear-gradient(145deg, rgba(3, 12, 8, 0.92), rgba(0, 0, 0, 0.84));
   border-radius: 24px;
   padding: 24px 24px 20px;
-  border: 1px solid rgba(130, 162, 255, 0.32);
+  border: 1px solid var(--kl-border-subtle);
   box-shadow: var(--kl-shadow-soft);
   backdrop-filter: blur(22px);
   animation: kl-drop-in 0.6s ease-out;
@@ -81,7 +124,7 @@ body {
 .kl-logo-mark {
   width: 44px;
   height: 44px;
-  filter: drop-shadow(0 0 18px rgba(111, 140, 255, 0.55));
+  filter: drop-shadow(0 0 18px rgba(126, 249, 255, 0.35));
 }
 
 .kl-logo-text {
@@ -94,7 +137,7 @@ body {
   font-size: 1.02rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #f9fbff;
+  color: var(--kl-text-main);
 }
 
 .kl-logo-sub {
@@ -106,7 +149,7 @@ body {
 
 /* Terminal shell */
 .kl-terminal-window {
-  background: linear-gradient(180deg, rgba(10, 14, 30, 0.96), rgba(4, 6, 16, 0.98));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.86));
   border-radius: var(--kl-radius-lg);
   border: 1px solid var(--kl-border-subtle);
   overflow: hidden;
@@ -118,8 +161,8 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-bottom: 1px solid rgba(120, 145, 255, 0.22);
-  background: linear-gradient(to right, rgba(6, 9, 20, 0.98), rgba(10, 14, 30, 0.98));
+  border-bottom: 1px solid rgba(126, 249, 255, 0.14);
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.86));
   font-family: var(--kl-font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -146,7 +189,7 @@ body {
   padding: 16px 16px 14px;
   font-family: var(--kl-font-mono);
   font-size: 0.86rem;
-  background: linear-gradient(180deg, rgba(3, 5, 12, 0.96), rgba(1, 2, 6, 0.98));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.86));
 }
 
 .kl-terminal-output {
@@ -154,7 +197,7 @@ body {
   max-height: 190px;
   overflow-y: auto;
   padding-right: 4px;
-  color: #e0e7ff;
+  color: rgba(255, 255, 255, 0.86);
   margin-bottom: 12px;
 }
 
@@ -164,7 +207,7 @@ body {
 }
 
 .kl-terminal-system {
-  color: #7efad1;
+  color: var(--kl-accent);
 }
 
 .kl-error-line,
@@ -174,9 +217,9 @@ body {
 
 /* Form wrapper inside terminal */
 .kl-form-wrapper {
-  background: radial-gradient(circle at left, rgba(109, 135, 255, 0.16), transparent 70%);
+  background: radial-gradient(circle at left, rgba(126, 249, 255, 0.14), transparent 70%);
   border-radius: var(--kl-radius-md);
-  border: 1px solid rgba(120, 145, 255, 0.4);
+  border: 1px solid rgba(126, 249, 255, 0.28);
   padding: 10px 10px 8px;
   margin-bottom: 12px;
 }
@@ -196,15 +239,15 @@ body {
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  border: 1px solid rgba(130, 162, 255, 0.35);
-  background: rgba(5, 8, 20, 0.85);
+  border: 1px solid var(--kl-border-subtle);
+  background: rgba(0, 0, 0, 0.55);
   color: var(--kl-text-muted);
 }
 
 .kl-tab-active {
-  background: radial-gradient(circle at top left, #7b8bff, #4c5dfa);
-  color: #fdfdff;
-  border-color: rgba(189, 205, 255, 0.9);
+  background: radial-gradient(circle at top left, rgba(126, 249, 255, 0.22), rgba(0, 0, 0, 0.68));
+  color: var(--kl-text-main);
+  border-color: rgba(126, 249, 255, 0.35);
 }
 
 /* Form controls */
@@ -237,8 +280,8 @@ body {
   margin-bottom: 3px;
   border-radius: 8px;
   padding: 7px 9px;
-  background: rgba(3, 6, 18, 0.9);
-  border: 1px solid rgba(140, 160, 255, 0.4);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(126, 249, 255, 0.22);
   color: var(--kl-text-main);
   font-family: var(--kl-font-mono);
   font-size: 0.8rem;
@@ -250,21 +293,21 @@ body {
 
 .kl-input:focus {
   outline: none;
-  border-color: rgba(189, 205, 255, 0.9);
-  box-shadow: 0 0 0 1px rgba(189, 205, 255, 0.5);
+  border-color: rgba(126, 249, 255, 0.7);
+  box-shadow: 0 0 0 1px rgba(126, 249, 255, 0.24);
 }
 
 .kl-btn {
   margin-top: 2px;
   padding: 7px 10px;
   border-radius: 10px;
-  background: radial-gradient(circle at top left, #7b8bff, #4c5dfa);
-  color: #fdfdff;
+  background: radial-gradient(circle at top left, rgba(126, 249, 255, 0.22), rgba(0, 0, 0, 0.6));
+  color: var(--kl-text-main);
   font-size: 0.78rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  border: 1px solid rgba(170, 190, 255, 0.7);
-  box-shadow: 0 9px 18px rgba(32, 54, 193, 0.75);
+  border: 1px solid rgba(126, 249, 255, 0.32);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.75);
   transition:
     transform 0.1s ease-out,
     box-shadow 0.1s ease-out,
@@ -274,13 +317,13 @@ body {
 
 .kl-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 13px 24px rgba(39, 65, 210, 0.9);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.82);
   filter: brightness(1.04);
 }
 
 .kl-btn:active {
   transform: translateY(0);
-  box-shadow: 0 6px 14px rgba(8, 15, 60, 0.95);
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.9);
 }
 
 .kl-btn:disabled {
@@ -291,8 +334,8 @@ body {
 
 .kl-btn-ghost {
   background: transparent;
-  border-color: rgba(130, 162, 255, 0.6);
-  color: rgba(213, 221, 255, 0.9);
+  border-color: rgba(126, 249, 255, 0.32);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .kl-btn-xs {
@@ -328,13 +371,13 @@ body {
 }
 
 .kl-terminal-input-mock {
-  color: #e0e7ff;
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .kl-terminal-cursor {
   width: 8px;
   height: 1.1em;
-  background: #e0e7ff;
+  background: rgba(255, 255, 255, 0.86);
   display: inline-block;
   animation: kl-cursor-blink 1s step-end infinite;
 }
@@ -369,9 +412,9 @@ body {
   justify-content: center;
   padding: 32px 16px;
   background:
-    radial-gradient(circle at top, rgba(88, 110, 255, 0.22), transparent 55%),
-    radial-gradient(circle at bottom, rgba(0, 255, 195, 0.12), transparent 55%),
-    #020308;
+    radial-gradient(circle at top, rgba(126, 249, 255, 0.16), transparent 55%),
+    radial-gradient(circle at bottom, rgba(126, 249, 255, 0.1), transparent 55%),
+    var(--kl-bg);
   z-index: 200;
   opacity: 0;
   transform: scale(0.96);
@@ -396,7 +439,7 @@ body {
   max-width: 220px;
   max-height: 220px;
   object-fit: contain;
-  filter: drop-shadow(0 0 26px rgba(111, 140, 255, 0.9));
+  filter: drop-shadow(0 0 26px rgba(126, 249, 255, 0.35));
 }
 
 .kl-splash-text {
@@ -404,7 +447,7 @@ body {
   font-size: 0.82rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #e5e7ff;
+  color: var(--kl-text-main);
 }
 
 .kl-splash-sub {
@@ -412,7 +455,7 @@ body {
   font-size: 0.72rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #a5b4fc;
+  color: var(--kl-text-muted);
 }
 
 /* =========================================================
@@ -422,8 +465,8 @@ body {
 .kl-app-shell {
   min-height: 100vh;
   padding: 24px 28px;
-  background: radial-gradient(circle at top, #050816 0, #020308 55%, #000 100%);
-  color: #f5f7ff;
+  background: radial-gradient(circle at top, rgba(126, 249, 255, 0.06) 0, var(--kl-bg) 55%, #000 100%);
+  color: var(--kl-text-main);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -465,8 +508,8 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: radial-gradient(circle at top, #1b244b, #050816);
-  border: 1px solid rgba(130, 162, 255, 0.7);
+  background: radial-gradient(circle at top, rgba(126, 249, 255, 0.08), rgba(0, 0, 0, 0.86));
+  border: 1px solid rgba(126, 249, 255, 0.2);
   overflow: hidden;
 }
 
@@ -488,12 +531,12 @@ body {
   font-size: 0.9rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #e5ebff;
+  color: var(--kl-text-main);
 }
 
 .kl-app-subtitle {
   font-size: 0.75rem;
-  color: rgba(193, 205, 255, 0.85);
+  color: var(--kl-text-muted);
 }
 
 .kl-app-meta {
@@ -510,16 +553,16 @@ body {
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border: 1px solid rgba(122, 154, 255, 0.7);
-  color: #e5ebff;
-  background: rgba(20, 26, 61, 0.7);
+  border: 1px solid rgba(126, 249, 255, 0.22);
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.55);
   font-family: var(--kl-font-mono);
 }
 
 .kl-pill-muted {
-  border-color: rgba(120, 136, 180, 0.6);
-  color: rgba(193, 205, 255, 0.8);
-  background: rgba(7, 11, 28, 0.9);
+  border-color: rgba(126, 249, 255, 0.14);
+  color: var(--kl-text-muted);
+  background: rgba(0, 0, 0, 0.45);
 }
 
 /* Main grid */
@@ -538,8 +581,8 @@ body {
 /* Panels / cards */
 .kl-panel {
   border-radius: 18px;
-  border: 1px solid rgba(98, 124, 210, 0.7);
-  background: radial-gradient(circle at top left, #151a32, #050716);
+  border: 1px solid rgba(126, 249, 255, 0.18);
+  background: radial-gradient(circle at top left, rgba(126, 249, 255, 0.04), rgba(0, 0, 0, 0.86));
   padding: 18px 18px 16px;
   box-shadow: 0 0 24px rgba(4, 6, 18, 0.9);
 }
@@ -552,18 +595,18 @@ body {
   font-size: 0.7rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(150, 169, 238, 0.95);
+  color: rgba(126, 249, 255, 0.86);
 }
 
 .kl-panel-title {
   margin: 4px 0 0;
   font-size: 1.05rem;
-  color: #f5f7ff;
+  color: var(--kl-text-main);
 }
 
 .kl-panel-body {
   font-size: 0.85rem;
-  color: rgba(213, 222, 255, 0.95);
+  color: rgba(255, 255, 255, 0.86);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -577,7 +620,7 @@ body {
   margin: 6px 0 0;
   padding-left: 18px;
   font-size: 0.8rem;
-  color: rgba(195, 206, 255, 0.95);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Stacked right column */
@@ -589,8 +632,8 @@ body {
 
 .kl-subpanel {
   border-radius: 14px;
-  border: 1px solid rgba(88, 112, 196, 0.8);
-  background: radial-gradient(circle at top right, #141a35, #050816);
+  border: 1px solid rgba(126, 249, 255, 0.16);
+  background: radial-gradient(circle at top right, rgba(126, 249, 255, 0.035), rgba(0, 0, 0, 0.82));
   padding: 14px 14px 12px;
 }
 
@@ -605,17 +648,17 @@ body {
   font-size: 0.7rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(155, 178, 250, 0.95);
+  color: rgba(126, 249, 255, 0.86);
 }
 
 .kl-subpanel-title {
   font-size: 0.95rem;
-  color: #f3f6ff;
+  color: var(--kl-text-main);
 }
 
 .kl-subpanel-text {
   font-size: 0.8rem;
-  color: rgba(202, 212, 255, 0.95);
+  color: rgba(255, 255, 255, 0.8);
   margin-bottom: 10px;
 }
 
@@ -627,16 +670,16 @@ body {
 .kl-log-window {
   font-family: var(--kl-font-mono);
   font-size: 0.78rem;
-  background: radial-gradient(circle at top left, #090d1c, #020308);
+  background: radial-gradient(circle at top left, rgba(126, 249, 255, 0.04), rgba(0, 0, 0, 0.86));
   border-radius: 10px;
-  border: 1px solid rgba(70, 88, 160, 0.9);
+  border: 1px solid rgba(126, 249, 255, 0.18);
   padding: 8px 10px;
   max-height: 140px;
   overflow-y: auto;
 }
 
 .kl-log-line {
-  color: rgba(170, 188, 255, 0.95);
+  color: rgba(255, 255, 255, 0.8);
   margin-bottom: 3px;
 }
 
@@ -647,7 +690,7 @@ body {
 .kl-dashboard-welcome {
   margin-bottom: 20px;
   font-size: 0.9rem;
-  color: #cdd1ff;
+  color: rgba(255, 255, 255, 0.86);
   letter-spacing: 0.04em;
 }
 
@@ -740,7 +783,7 @@ body {
   inset: 0;
   z-index: 350;
   background:
-    radial-gradient(circle at top, rgba(15, 23, 42, 0.95), #020308 80%);
+    radial-gradient(circle at top, rgba(0, 0, 0, 0.92), var(--kl-bg) 80%);
   display: none;              /* JS controls display */
   align-items: center;
   justify-content: center;
@@ -751,8 +794,8 @@ body {
   width: 100%;
   max-width: 720px;
   border-radius: 18px;
-  border: 1px solid rgba(148, 163, 255, 0.85);
-  background: radial-gradient(circle at top left, #020617, #020314);
+  border: 1px solid var(--kl-border-subtle);
+  background: radial-gradient(circle at top left, rgba(126, 249, 255, 0.04), rgba(0, 0, 0, 0.82));
   box-shadow: 0 26px 60px rgba(0, 0, 0, 0.9);
   padding: 18px 20px 16px;
   display: flex;
@@ -771,14 +814,14 @@ body {
   font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(129, 140, 248, 0.9);
+  color: rgba(126, 249, 255, 0.9);
 }
 
 .kl-lore-title {
   font-size: 1.05rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #e5e7ff;
+  color: var(--kl-text-main);
 }
 
 .kl-lore-body {
@@ -786,10 +829,10 @@ body {
   padding: 10px;
   border-radius: 10px;
   border: 1px solid rgba(51, 65, 85, 0.8);
-  background: radial-gradient(circle at top, #020617, #020617);
+  background: radial-gradient(circle at top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.68));
   font-family: "DM Mono", ui-monospace, monospace;
   font-size: 0.78rem;
-  color: #cbd5f5;
+  color: rgba(255, 255, 255, 0.86);
   max-height: 260px;
   overflow-y: auto;
 }
@@ -843,7 +886,7 @@ body {
 .kl-mission-modal {
   position: fixed;
   inset: 0;
-  background: rgba(3, 6, 23, 0.88);
+  background: rgba(0, 0, 0, 0.78);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -853,9 +896,9 @@ body {
 .kl-mission-dialog {
   width: min(640px, 100% - 2rem);
   max-height: calc(100vh - 4rem);
-  background: radial-gradient(circle at top left, #0b1020 0, #050815 55%, #02030a 100%);
-  border: 1px solid rgba(129, 140, 248, 0.6);
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.95);
+  background: radial-gradient(circle at top left, rgba(126, 249, 255, 0.04) 0, rgba(0, 0, 0, 0.85) 55%, rgba(0, 0, 0, 0.92) 100%);
+  border: 1px solid rgba(126, 249, 255, 0.22);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.92);
   border-radius: 0.9rem;
   padding: 1.4rem 1.7rem 1.25rem;
   display: flex;
@@ -876,22 +919,22 @@ body {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: rgba(129, 140, 248, 0.9);
+  color: rgba(126, 249, 255, 0.9);
   font-family: var(--kl-font-mono);
 }
 
 .kl-mission-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #e5ecff;
+  color: var(--kl-text-main);
 }
 
 /* Body */
 .kl-mission-body {
   font-size: 0.86rem;
   line-height: 1.55;
-  color: rgba(226, 232, 255, 0.9);
-  background: radial-gradient(circle at top left, #040818, #02030b);
+  color: rgba(255, 255, 255, 0.86);
+  background: radial-gradient(circle at top left, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.74));
   border-radius: 0.65rem;
   border: 1px solid rgba(51, 65, 85, 0.9);
   padding: 0.9rem 0.95rem;
@@ -919,15 +962,15 @@ body {
 
 /* Optional emphasis helpers if you use <strong>, <em>, <code> in text */
 .kl-mission-body strong {
-  color: #e0f2fe;
+  color: var(--kl-accent);
 }
 .kl-mission-body em {
-  color: rgba(196, 181, 253, 0.95);
+  color: rgba(126, 249, 255, 0.82);
 }
 .kl-mission-body code {
   font-family: var(--kl-font-mono);
   font-size: 0.8rem;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(0, 0, 0, 0.65);
   padding: 1px 4px;
   border-radius: 4px;
 }
@@ -944,13 +987,13 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 0.66rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--kl-text-muted);
   margin-bottom: 0.15rem;
   font-family: var(--kl-font-mono);
 }
 
 .kl-mission-hint {
-  color: rgba(191, 219, 254, 0.95);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 /* Footer buttons */
@@ -1001,10 +1044,10 @@ body {
   padding: 18px 22px 24px;
   border-radius: 24px;
   background:
-    radial-gradient(circle at top left, rgba(111, 140, 255, 0.08), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(0, 255, 195, 0.06), transparent 55%),
-    rgba(2, 4, 14, 0.96);
-  border: 1px solid rgba(88, 112, 210, 0.7);
+    radial-gradient(circle at top left, rgba(126, 249, 255, 0.06), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(126, 249, 255, 0.04), transparent 55%),
+    rgba(0, 0, 0, 0.86);
+  border: 1px solid rgba(126, 249, 255, 0.18);
   box-shadow:
     0 0 0 1px rgba(8, 12, 32, 0.85),
     0 24px 60px rgba(0, 0, 0, 0.85);
@@ -1014,7 +1057,7 @@ body {
 .kl-app-header {
   padding-bottom: 10px;
   margin-bottom: 14px;
-  border-bottom: 1px dashed rgba(120, 140, 220, 0.55);
+  border-bottom: 1px dashed rgba(126, 249, 255, 0.18);
 }
 
 /* App meta pills + buttons tighter and more "instrument" like */
@@ -1040,9 +1083,9 @@ body {
 /* Panels upgraded to "classified file" cards */
 .kl-panel {
   background:
-    linear-gradient(145deg, rgba(7, 11, 28, 0.98), rgba(2, 5, 14, 0.98));
+    linear-gradient(145deg, rgba(126, 249, 255, 0.04), rgba(0, 0, 0, 0.86));
   border-radius: 18px;
-  border: 1px solid rgba(104, 132, 230, 0.9);
+  border: 1px solid rgba(126, 249, 255, 0.18);
   box-shadow:
     0 0 0 1px rgba(6, 10, 28, 0.9),
     0 18px 40px rgba(0, 0, 0, 0.85);
@@ -1052,7 +1095,7 @@ body {
 .kl-panel-header {
   padding-bottom: 8px;
   margin-bottom: 10px;
-  border-bottom: 1px solid rgba(56, 78, 150, 0.7);
+  border-bottom: 1px solid rgba(126, 249, 255, 0.12);
 }
 
 /* Orientation title reads more like a file label */
@@ -1071,95 +1114,97 @@ body {
   font-family: var(--kl-font-mono);
   font-size: 0.78rem;
   background:
-    radial-gradient(circle at top left, #050717, #020308);
+    radial-gradient(circle at top left, rgba(126, 249, 255, 0.04), rgba(0, 0, 0, 0.86));
   border-radius: 12px;
-  border: 1px solid rgba(92, 114, 210, 0.95);
+  border: 1px solid rgba(126, 249, 255, 0.18);
   padding: 9px 11px;
   max-height: 150px;
   overflow-y: auto;
 }
 
-<style>
-  .kl-intro{
-    padding: 28px 16px 10px;
-    display:flex;
-    justify-content:center;
-  }
-  .kl-intro__frame{
-    width:min(980px, 100%);
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:16px;
-    padding:18px 18px 14px;
-    background: rgba(0,0,0,.35);
-    backdrop-filter: blur(6px);
-    box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  }
-  .kl-intro__hdr{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:12px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    letter-spacing:.06em;
-    text-transform:uppercase;
-    font-size:12px;
-  }
-  .kl-tag{
-    opacity:.9;
-  }
-  .kl-status{
-    opacity:.7;
-  }
-  .kl-terminal{
-    margin:0;
-    padding:14px 14px;
-    border-radius:12px;
-    border:1px solid rgba(255,255,255,.10);
-    background: rgba(0,0,0,.45);
-    overflow:auto;
-    line-height:1.55;
-    font-size:14px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    white-space:pre-wrap;
-  }
-  .kl-dim{ opacity:.7; }
-  .kl-strong{ font-weight:700; }
+/* Intro / terminal frame */
+.kl-intro {
+  padding: 28px 16px 10px;
+  display: flex;
+  justify-content: center;
+}
 
-  .kl-cta{
-    margin-top:14px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    align-items:flex-start;
-  }
-  .kl-btn{
-    border-radius:12px;
-    padding:12px 14px;
-    border:1px solid rgba(255,255,255,.16);
-    background: rgba(0,0,0,.55);
-    color: inherit;
-    cursor:pointer;
-    font-weight:600;
-    transition: transform .12s ease, border-color .12s ease, background .12s ease;
-  }
-  .kl-btn:hover{
-    transform: translateY(-1px);
-    border-color: rgba(255,255,255,.26);
-    background: rgba(0,0,0,.65);
-  }
-  .kl-btn:active{ transform: translateY(0); }
+.kl-intro__frame {
+  width: min(980px, 100%);
+  border: 1px solid var(--kl-border-subtle);
+  border-radius: var(--kl-radius-lg);
+  padding: 18px 18px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
 
-  .kl-microcopy{
-    font-size:12px;
-    opacity:.75;
+.kl-intro__hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-family: var(--kl-font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--kl-text-muted);
+}
+
+.kl-tag {
+  opacity: 0.95;
+  color: var(--kl-accent);
+}
+
+.kl-status {
+  opacity: 0.75;
+}
+
+.kl-terminal {
+  margin: 0;
+  padding: 14px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(126, 249, 255, 0.14);
+  background: rgba(0, 0, 0, 0.45);
+  overflow: auto;
+  line-height: 1.55;
+  font-size: 14px;
+  font-family: var(--kl-font-mono);
+  white-space: pre-wrap;
+}
+
+.kl-dim {
+  opacity: 0.7;
+}
+
+.kl-strong {
+  font-weight: 700;
+}
+
+.kl-cta {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.kl-microcopy {
+  font-size: 12px;
+  opacity: 0.75;
+  color: var(--kl-text-muted);
+}
+
+/* Mobile tightening */
+@media (max-width: 520px) {
+  .kl-intro__frame {
+    padding: 14px;
   }
 
-  /* Mobile tightening */
-  @media (max-width: 520px){
-    .kl-intro__frame{ padding:14px; }
-    .kl-terminal{ font-size:13px; }
+  .kl-terminal {
+    font-size: 13px;
   }
-</style>
+}
 
 

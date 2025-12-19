@@ -1,10 +1,10 @@
 :root {
-  --bg: #03050a;
-  --panel: rgba(6, 10, 22, 0.86);
-  --border: rgba(136, 163, 255, 0.22);
-  --text: rgba(238, 242, 255, 0.94);
-  --muted: rgba(238, 242, 255, 0.64);
-  --accent: rgba(122, 162, 255, 0.9);
+  --bg: #06070b;
+  --panel: rgba(12, 14, 20, 0.62);
+  --border: rgba(255, 255, 255, 0.14);
+  --text: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.62);
+  --accent: rgba(126, 249, 255, 0.9);
 }
 
 html,
@@ -15,9 +15,9 @@ body {
 body {
   margin: 0;
   background:
-    radial-gradient(900px 520px at 18% 18%, rgba(122, 162, 255, 0.14), transparent 55%),
-    radial-gradient(780px 460px at 76% 66%, rgba(126, 250, 209, 0.07), transparent 55%),
-    linear-gradient(180deg, rgba(6, 9, 20, 1), var(--bg));
+    radial-gradient(900px 520px at 18% 18%, rgba(126, 249, 255, 0.14), transparent 55%),
+    radial-gradient(780px 460px at 76% 66%, rgba(255, 255, 255, 0.07), transparent 55%),
+    linear-gradient(180deg, rgba(0, 0, 0, 1), var(--bg));
   color: var(--text);
   display: flex;
   align-items: center;
@@ -58,7 +58,7 @@ body {
 .term {
   margin: 0;
   padding: 14px;
-  border: 1px solid rgba(136, 163, 255, 0.18);
+  border: 1px solid rgba(126, 249, 255, 0.14);
   border-radius: 14px;
   background: rgba(0, 0, 0, 0.45);
   white-space: pre-wrap;
@@ -96,7 +96,7 @@ body {
   justify-content: center;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(136, 163, 255, 0.22);
+  border: 1px solid var(--border);
   background: rgba(6, 10, 22, 0.72);
   color: var(--text);
   text-decoration: none;
@@ -108,7 +108,7 @@ body {
 
 .btn:hover {
   transform: translateY(-1px);
-  border-color: rgba(122, 162, 255, 0.55);
+  border-color: rgba(126, 249, 255, 0.55);
   background: rgba(6, 10, 22, 0.82);
 }
 

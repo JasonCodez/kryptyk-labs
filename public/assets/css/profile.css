@@ -43,8 +43,8 @@
   max-width: 360px;
   box-sizing: border-box;
   border-radius: 14px;
-  background: radial-gradient(circle at top left, #101522, #050711);
-  border: 1px solid rgba(129, 140, 248, 0.9);
+  background: radial-gradient(circle at top left, rgba(126, 249, 255, 0.04), rgba(0, 0, 0, 0.86));
+  border: 1px solid rgba(126, 249, 255, 0.18);
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.9);
   padding: 12px 14px 22px 14px;
   overflow: hidden;
@@ -58,9 +58,9 @@
   height: 26%;
   background: linear-gradient(
     135deg,
-    rgba(96, 165, 250, 0.16),
-    rgba(56, 189, 248, 0.08),
-    rgba(244, 114, 182, 0.14)
+    rgba(126, 249, 255, 0.12),
+    rgba(255, 255, 255, 0.07),
+    rgba(126, 249, 255, 0.05)
   );
   mix-blend-mode: screen;
   pointer-events: none;
@@ -77,7 +77,7 @@
     90deg,
     rgba(15, 23, 42, 1) 0,
     rgba(15, 23, 42, 1) 4px,
-    rgba(30, 64, 175, 0.7) 5px
+    rgba(126, 249, 255, 0.22) 5px
   );
   opacity: 0.9;
 }
@@ -106,15 +106,15 @@
   width: 88px;
   height: 88px;
   border-radius: 10px;
-  border: 1px solid rgba(191, 219, 254, 0.9);
+  border: 1px solid rgba(126, 249, 255, 0.18);
   background: radial-gradient(circle at top, #1f2937, #020617);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   box-shadow:
-    0 0 16px rgba(56, 189, 248, 0.5),
-    0 0 0 1px rgba(15, 23, 42, 0.9);
+    0 0 16px rgba(126, 249, 255, 0.16),
+    0 0 0 1px rgba(0, 0, 0, 0.9);
 }
 
 .kl-profile-page .kl-id-photo {
@@ -128,14 +128,14 @@
   font-size: 1.2rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #e5ecff;
+  color: var(--kl-text-main);
 }
 
 .kl-profile-page .kl-id-tagline {
   font-size: 0.63rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(191, 219, 254, 0.9);
+  color: var(--kl-text-muted);
 }
 
 /* Right column: ID fields */
@@ -156,7 +156,7 @@
   font-size: 0.6rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(148, 163, 255, 0.95);
+  color: rgba(126, 249, 255, 0.86);
 }
 
 .kl-profile-page .kl-id-header-row .kl-id-value {
@@ -185,14 +185,14 @@
   font-size: 0.62rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(148, 163, 255, 0.95);
+  color: rgba(126, 249, 255, 0.86);
   min-width: 92px;
   flex-shrink: 0;
 }
 
 .kl-profile-page .kl-id-value {
   font-family: "DM Mono", monospace;
-  color: #e5ecff;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.78rem;
   white-space: normal;
   text-overflow: clip;
@@ -202,9 +202,9 @@
 .kl-profile-page .kl-id-clearance {
   padding: 1px 8px;
   border-radius: 999px;
-  background: rgba(22, 163, 74, 0.16);
-  border: 1px solid rgba(34, 197, 94, 0.65);
-  color: #bbf7d0;
+  background: rgba(126, 249, 255, 0.1);
+  border: 1px solid rgba(126, 249, 255, 0.28);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.65rem;
 }
 
@@ -281,9 +281,9 @@
   max-width: 260px;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(129, 140, 248, 0.9);
-  background: rgba(15, 23, 42, 0.98);
-  color: #e5ebff;
+  border: 1px solid rgba(126, 249, 255, 0.18);
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--kl-text-main);
   font-size: 0.75rem;
   font-family: "DM Mono", monospace;
 }
@@ -355,7 +355,7 @@
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: rgba(148, 163, 255, 0.9);
+  color: rgba(126, 249, 255, 0.86);
 }
 
 .kl-profile-page .kl-profile-panel-header .kl-panel-title {
@@ -367,7 +367,7 @@
 
 .kl-profile-page .kl-profile-panel-body {
   font-size: 0.8rem;
-  color: #cbd5f5;
+  color: rgba(255, 255, 255, 0.86);
 }
 
 /* Profile fields */
@@ -382,7 +382,7 @@
   font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(148, 163, 255, 0.9);
+  color: rgba(126, 249, 255, 0.86);
 }
 
 .kl-profile-page .kl-profile-value {
@@ -404,21 +404,15 @@
   position: relative;
   height: 8px;
   border-radius: 999px;
-  background: radial-gradient(circle at left, #0b1120, #020617);
+  background: radial-gradient(circle at left, rgba(126, 249, 255, 0.035), rgba(0, 0, 0, 0.72));
   overflow: hidden;
-  border: 1px solid rgba(30, 64, 175, 0.7);
+  border: 1px solid rgba(126, 249, 255, 0.16);
 }
 
 .kl-profile-page .kl-progress-bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    #22c55e,
-    #22c55e,
-    #facc15,
-    #ef4444
-  );
+  background: linear-gradient(90deg, rgba(126, 249, 255, 0.95), rgba(126, 249, 255, 0.55));
   width: 0%;
   transition: width 0.8s ease-out;
 }
@@ -435,7 +429,7 @@
   background: radial-gradient(circle at top, #020617, #000);
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(37, 99, 235, 0.4);
+  border: 1px solid rgba(126, 249, 255, 0.14);
 }
 
 .kl-profile-page .kl-bio-wave {
@@ -446,8 +440,8 @@
   background: linear-gradient(
     90deg,
     transparent,
-    #22c55e,
-    #facc15,
+    rgba(126, 249, 255, 0.9),
+    rgba(255, 255, 255, 0.55),
     transparent
   );
   opacity: 0.7;
@@ -494,7 +488,7 @@
   padding: 10px;
   background: radial-gradient(circle at top, #020617, #020617);
   border-radius: 8px;
-  border: 1px solid rgba(30, 64, 175, 0.6);
+  border: 1px solid rgba(126, 249, 255, 0.14);
   max-height: 180px;
   overflow-y: auto;
   font-family: "DM Mono", monospace;
@@ -503,7 +497,7 @@
 
 .kl-profile-page .kl-log-line-profile {
   margin-bottom: 3px;
-  color: #cbd5f5;
+  color: rgba(255, 255, 255, 0.86);
 }
 
 /* Motto */
@@ -514,7 +508,7 @@
 .kl-profile-page .kl-motto-text {
   margin: 4px 0 6px 0;
   font-size: 0.8rem;
-  color: #e5e7eb;
+  color: var(--kl-text-main);
   font-style: italic;
 }
 
@@ -531,9 +525,9 @@
   max-width: 260px;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(129, 140, 248, 0.9);
-  background: rgba(15, 23, 42, 0.98);
-  color: #e5ebff;
+  border: 1px solid rgba(126, 249, 255, 0.18);
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--kl-text-main);
   font-size: 0.75rem;
   font-family: "DM Mono", monospace;
 }
@@ -610,10 +604,10 @@
   padding: 18px 22px 24px;
   border-radius: 24px;
   background:
-    radial-gradient(circle at top left, rgba(111, 140, 255, 0.09), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(0, 255, 195, 0.07), transparent 55%),
-    rgba(2, 4, 16, 0.96);
-  border: 1px solid rgba(88, 112, 210, 0.7);
+    radial-gradient(circle at top left, rgba(126, 249, 255, 0.06), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(126, 249, 255, 0.04), transparent 55%),
+    rgba(0, 0, 0, 0.86);
+  border: 1px solid rgba(126, 249, 255, 0.18);
   box-shadow:
     0 0 0 1px rgba(8, 12, 32, 0.85),
     0 24px 60px rgba(0, 0, 0, 0.85);
@@ -623,15 +617,15 @@
 .kl-profile-page .kl-app-header {
   padding-bottom: 10px;
   margin-bottom: 16px;
-  border-bottom: 1px dashed rgba(120, 140, 220, 0.6);
+  border-bottom: 1px dashed rgba(126, 249, 255, 0.18);
 }
 
 /* Panels: slimmer, dossier-style */
 .kl-profile-page .kl-panel {
   border-radius: 18px;
   background:
-    linear-gradient(150deg, rgba(7, 11, 28, 0.98), rgba(3, 7, 18, 0.98));
-  border: 1px solid rgba(104, 132, 230, 0.95);
+    linear-gradient(150deg, rgba(126, 249, 255, 0.04), rgba(0, 0, 0, 0.86));
+  border: 1px solid rgba(126, 249, 255, 0.18);
   box-shadow:
     0 0 0 1px rgba(6, 10, 28, 0.9),
     0 18px 40px rgba(0, 0, 0, 0.85);
@@ -644,9 +638,9 @@
 
 /* Motto input blends better into panel */
 .kl-profile-page .kl-motto-input {
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(0, 0, 0, 0.65);
   border-radius: 8px;
-  border: 1px solid rgba(99, 102, 241, 0.6);
+  border: 1px solid rgba(126, 249, 255, 0.22);
 }
 
 /* Submit button feels like a small lab control */
@@ -668,21 +662,21 @@
   margin-top: 14px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(88, 112, 196, 0.7);
-  background: radial-gradient(circle at top left, #090f25, #040615);
+  border: 1px solid rgba(126, 249, 255, 0.16);
+  background: radial-gradient(circle at top left, rgba(126, 249, 255, 0.04), rgba(0, 0, 0, 0.82));
 }
 
 .kl-profile-page .kl-profile-card-label {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: rgba(155, 178, 250, 0.9);
+  color: rgba(126, 249, 255, 0.86);
   margin-bottom: 4px;
 }
 
 .kl-profile-page .kl-profile-card-helper {
   font-size: 0.82rem;
-  color: rgba(210, 220, 255, 0.9);
+  color: var(--kl-text-muted);
   margin-bottom: 6px;
 }
 
@@ -692,7 +686,7 @@
 
 .kl-profile-page .kl-profile-motto-display {
   font-size: 0.82rem;
-  color: rgba(226, 232, 255, 0.95);
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 6px;
 }
 
@@ -709,7 +703,7 @@
   margin-top: 6px;
   background: rgba(15, 23, 42, 0.8);
   border-radius: 999px;
-  border: 1px solid rgba(129, 140, 248, 0.5);
+  border: 1px solid rgba(126, 249, 255, 0.16);
   padding: 2px;
   overflow: hidden;
 }
@@ -718,7 +712,7 @@
   width: 5%;
   height: 10px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #4c6fff, #22d3ee);
+  background: linear-gradient(90deg, rgba(126, 249, 255, 0.95), rgba(126, 249, 255, 0.55));
   transition: width 0.4s ease-out;
 }
 
@@ -726,7 +720,7 @@
   margin-top: 4px;
   font-size: 0.75rem;
   font-family: "DM Mono", ui-monospace, monospace;
-  color: rgba(191, 219, 254, 0.9);
+  color: var(--kl-text-muted);
 }
 
 .kl-profile-page .kl-profile-logs {

@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const missionSubmitBtn = document.getElementById("kl-mission-submit");
 
   if (!token) {
-    window.location.href = "/";
+    window.location.href = "login.html";
     return;
   }
 
@@ -65,10 +65,12 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutBtn.addEventListener("click", () => {
       localStorage.removeItem("kl_token");
       localStorage.removeItem("kl_asset_email");
+      localStorage.removeItem("kl_access_granted");
       localStorage.removeItem("kl_display_name");
       localStorage.removeItem("kl_clearance_level");
       localStorage.removeItem("kl_user_id");
-      window.location.href = "/";
+      localStorage.removeItem("kl_debrief_seen");
+      window.location.href = "login.html";
     });
   }
 
