@@ -274,6 +274,9 @@
             mottoDisplayEl,
             data.motto || value || "No field motto set."
           );
+
+          // Clear input after successful update
+          mottoInput.value = "";
         } catch (err) {
           console.error("Motto update error:", err);
           if (mottoError) {
@@ -331,6 +334,9 @@
           // Update UI + local storage
           safeText(nameEl, value);
           localStorage.setItem("kl_display_name", value);
+
+          // Clear input after successful update
+          displayNameInput.value = "";
         } catch (err) {
           console.error("Display name update error:", err);
           if (displayNameError) {

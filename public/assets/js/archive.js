@@ -12,10 +12,40 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailEl = document.getElementById("kl-archive-detail");
   const errorEl = document.getElementById("kl-archive-error");
 
+  // Starter Protocol console
+  const starterOpenBtn = document.getElementById("kl-starter-protocol-open");
+  const starterBeaconEl = document.getElementById("kl-last-auth-beacon");
+  const starterStatusEl = document.getElementById("kl-starter-protocol-status");
+
+  // Mission modal elements
+  const missionModal = document.getElementById("kl-mission-modal");
+  const missionTitleEl = document.getElementById("kl-mission-title");
+  const missionBodyEl = document.getElementById("kl-mission-body");
+  const missionHintEl = document.getElementById("kl-mission-hint");
+  const missionCloseBtn = document.getElementById("kl-mission-close");
+  const missionAnswerInput = document.getElementById("kl-mission-answer-input");
+  const missionAnswerError = document.getElementById("kl-mission-answer-error");
+  const missionAnswerStatus = document.getElementById("kl-mission-answer-status");
+  const missionSubmitBtn = document.getElementById("kl-mission-submit");
+
   if (!token) {
     window.location.href = "/";
     return;
   }
+
+  const STARTER_PROTOCOL_ID = "starter-protocol-01";
+  let starterProtocolCompleted = false;
+  const starterMission = {
+    id: STARTER_PROTOCOL_ID,
+    title: "Starter Protocol // INITIATE-01",
+    body:
+      "Welcome inside the Lab, asset.\n\n" +
+      "Your first live operation is observation under pressure.\n\n" +
+      "In the Mission Console on this page, locate the [GATE] line that shows your last successful authentication.\n" +
+      "Copy the beacon token exactly as displayed (it begins with SIG-), then submit it here.\n",
+    hint:
+      "The token is shown in the Mission Console as: [GATE] last successful authentication: SIG-..."
+  };
 
   // Basic header hydrate
   const email = localStorage.getItem("kl_asset_email") || "unknown@asset";
@@ -46,6 +76,128 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!errorEl) return;
     errorEl.textContent = msg;
     errorEl.classList.remove("hidden");
+  }
+
+  function showStarterStatus(msg) {
+    if (!starterStatusEl) return;
+    starterStatusEl.textContent = msg;
+    starterStatusEl.classList.remove("hidden");
+  }
+
+  function setStarterProtocolCompletedUI() {
+    showStarterStatus("STATUS: VERIFIED — Starter Protocol completed.");
+    if (starterOpenBtn) {
+      starterOpenBtn.disabled = true;
+      starterOpenBtn.textContent = "STARTER PROTOCOL VERIFIED";
+    }
+  }
+
+  function clearMissionMessages() {
+    if (missionAnswerError) missionAnswerError.textContent = "";
+    if (missionAnswerStatus) {
+      missionAnswerStatus.textContent = "";
+      missionAnswerStatus.classList.add("hidden");
+    }
+  }
+
+  function openMissionModal(mission) {
+    if (!missionModal) return;
+    if (missionTitleEl) missionTitleEl.textContent = mission.title;
+    if (missionBodyEl) missionBodyEl.textContent = mission.body;
+    if (missionHintEl) missionHintEl.textContent = mission.hint;
+    if (missionAnswerInput) missionAnswerInput.value = "";
+    clearMissionMessages();
+    missionModal.setAttribute("data-mission-id", mission.id);
+    missionModal.classList.remove("hidden");
+
+    if (mission.id === STARTER_PROTOCOL_ID && starterProtocolCompleted) {
+      if (missionAnswerStatus) {
+        missionAnswerStatus.textContent = "Already verified. Starter Protocol is complete.";
+        missionAnswerStatus.classList.remove("hidden");
+      }
+      if (missionAnswerInput) missionAnswerInput.disabled = true;
+      if (missionSubmitBtn) missionSubmitBtn.disabled = true;
+    } else {
+      if (missionAnswerInput) missionAnswerInput.disabled = false;
+      if (missionSubmitBtn) missionSubmitBtn.disabled = false;
+    }
+
+    setTimeout(() => missionAnswerInput?.focus(), 50);
+  }
+
+  function closeMissionModal() {
+    if (!missionModal) return;
+    missionModal.classList.add("hidden");
+    missionModal.removeAttribute("data-mission-id");
+    if (missionAnswerInput) missionAnswerInput.value = "";
+    if (missionAnswerInput) missionAnswerInput.disabled = false;
+    if (missionSubmitBtn) missionSubmitBtn.disabled = false;
+    clearMissionMessages();
+  }
+
+  async function refreshStarterBeacon() {
+    if (!starterBeaconEl) return;
+    starterBeaconEl.textContent = "syncing…";
+    try {
+      const res = await fetch(`${API_BASE}/api/missions/starter-protocol`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || !data.ok) {
+        starterBeaconEl.textContent = "unavailable";
+        return;
+      }
+      starterBeaconEl.textContent = data.beacon || "unavailable";
+    } catch (err) {
+      starterBeaconEl.textContent = "unavailable";
+    }
+  }
+
+  async function refreshStarterProtocolStatus() {
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/missions/status?mission_id=${encodeURIComponent(
+          STARTER_PROTOCOL_ID
+        )}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || !data.ok) return;
+
+      if (data.completed) {
+        starterProtocolCompleted = true;
+        setStarterProtocolCompletedUI();
+
+        const openMissionId = missionModal?.getAttribute("data-mission-id") || "";
+        if (openMissionId === STARTER_PROTOCOL_ID) {
+          if (missionAnswerStatus) {
+            missionAnswerStatus.textContent = "Already verified. Starter Protocol is complete.";
+            missionAnswerStatus.classList.remove("hidden");
+          }
+          if (missionAnswerInput) missionAnswerInput.disabled = true;
+          if (missionSubmitBtn) missionSubmitBtn.disabled = true;
+        }
+      }
+    } catch (err) {
+      // non-fatal
+    }
+  }
+
+  async function submitMissionAnswer(missionId, answer) {
+    const res = await fetch(`${API_BASE}/api/missions/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ mission_id: missionId, answer })
+    });
+    const data = await res.json().catch(() => null);
+    if (!data) return { ok: false, error: "Submission failed." };
+    if (!res.ok) {
+      return { ok: false, error: data.error || "Submission failed." };
+    }
+    return data;
   }
 
   function formatDate(iso) {
@@ -188,5 +340,98 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Wire Starter Protocol UI
+  if (starterOpenBtn) {
+    starterOpenBtn.addEventListener("click", () => {
+      openMissionModal(starterMission);
+    });
+  }
+
+  if (missionCloseBtn) {
+    missionCloseBtn.addEventListener("click", () => {
+      closeMissionModal();
+    });
+  }
+
+  if (missionModal) {
+    missionModal.addEventListener("click", (e) => {
+      if (e.target === missionModal) {
+        closeMissionModal();
+      }
+    });
+  }
+
+  if (missionSubmitBtn) {
+    missionSubmitBtn.addEventListener("click", async () => {
+      const missionId = missionModal?.getAttribute("data-mission-id") || "";
+      const answer = (missionAnswerInput?.value || "").trim();
+      clearMissionMessages();
+
+      if (!missionId) return;
+
+      if (missionId === STARTER_PROTOCOL_ID && starterProtocolCompleted) {
+        if (missionAnswerStatus) {
+          missionAnswerStatus.textContent = "Already verified. Starter Protocol is complete.";
+          missionAnswerStatus.classList.remove("hidden");
+        }
+        setStarterProtocolCompletedUI();
+        return;
+      }
+
+      if (!answer) {
+        if (missionAnswerError) missionAnswerError.textContent = "Answer is required.";
+        return;
+      }
+
+      missionSubmitBtn.disabled = true;
+      try {
+        const data = await submitMissionAnswer(missionId, answer);
+        if (!data.ok) {
+          if (missionAnswerError) missionAnswerError.textContent = data.error || "Submission failed.";
+          return;
+        }
+        if (!data.correct) {
+          if (missionAnswerError) {
+            missionAnswerError.textContent = data.message || "Incorrect answer.";
+          }
+          return;
+        }
+
+        if (data.already_completed) {
+          starterProtocolCompleted = true;
+          if (missionAnswerStatus) {
+            missionAnswerStatus.textContent = "Already verified. Starter Protocol is complete.";
+            missionAnswerStatus.classList.remove("hidden");
+          }
+          setStarterProtocolCompletedUI();
+          return;
+        }
+
+        // Confirmation of success (requested)
+        if (missionAnswerStatus) {
+          missionAnswerStatus.textContent = "Verified. Starter Protocol completed.";
+          missionAnswerStatus.classList.remove("hidden");
+        }
+        starterProtocolCompleted = true;
+        setStarterProtocolCompletedUI();
+
+        // Update local storage + header pills
+        if (data.clearance_level) {
+          localStorage.setItem("kl_clearance_level", String(data.clearance_level));
+          if (clearancePill) clearancePill.textContent = `clearance: ${String(data.clearance_level).toUpperCase()}`;
+        }
+
+        // Refresh archive list so the completion event appears
+        await loadArchive();
+      } finally {
+        if (!starterProtocolCompleted) {
+          missionSubmitBtn.disabled = false;
+        }
+      }
+    });
+  }
+
+  void refreshStarterBeacon();
+  void refreshStarterProtocolStatus();
   loadArchive();
 });

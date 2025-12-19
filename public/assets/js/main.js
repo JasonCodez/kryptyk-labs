@@ -10,6 +10,11 @@
     // -------------------------------------------------------
     // DOM REFERENCES
     // -------------------------------------------------------
+    // Stop main.js from running on pages that are NOT the gate/login page
+    if (!document.getElementById("kl-preloader")) {
+      return;
+    }
+
     const preloader = document.getElementById("kl-preloader");
     const splash = document.getElementById("kl-splash");
     // Transition guard: ensure we only run the splash/app sequence once
@@ -71,6 +76,7 @@
 
     // App header / meta
     const assetEmailPill = document.getElementById("kl-asset-email-pill");
+    const assetClearancePill = document.getElementById("kl-asset-clearance-pill");
     const logoutBtn = document.getElementById("kl-logout-btn");
     const welcomeName = document.getElementById("kl-welcome-name");
     const welcomeClearance = document.getElementById("kl-welcome-clearance");
@@ -92,6 +98,11 @@
     const missionHintEl = document.getElementById("kl-mission-hint");
     const missionCloseBtn = document.getElementById("kl-mission-close");
     const missionConfirmBtn = document.getElementById("kl-mission-confirm");
+    const missionAnswerBlock = document.getElementById("kl-mission-answer-block");
+    const missionAnswerInput = document.getElementById("kl-mission-answer-input");
+    const missionAnswerError = document.getElementById("kl-mission-answer-error");
+    const missionSubmitBtn = document.getElementById("kl-mission-submit");
+    const lastAuthBeaconEl = document.getElementById("kl-last-auth-beacon");
 
     // -------------------------------------------------------
     // STATE
@@ -187,6 +198,150 @@
         welcomeName.textContent = nameForWelcome.toUpperCase();
         welcomeClearance.textContent = clearance.toUpperCase();
       }
+
+      // Top-right clearance pill (Orientation dashboard)
+      if (assetClearancePill) {
+        assetClearancePill.textContent = `clearance: ${clearance.toUpperCase()}`;
+      }
+    }
+
+
+    async function recordMissionCompletion(missionId, { success = true } = {}) {
+      const token = localStorage.getItem("kl_token");
+      if (!token) return;
+
+      const cleanId = (missionId || "").toString().trim();
+      if (!cleanId) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/missions/complete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            mission_id: cleanId,
+            success: !!success
+          })
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.ok) {
+          const msg = (data && data.error) || "Mission completion not recorded.";
+          console.warn("[MISSIONS] complete failed:", msg);
+          logEventToDashboard(`[MISSIONS] completion sync failed: ${msg}`);
+          return;
+        }
+
+        if (data.clearance_level) {
+          localStorage.setItem("kl_clearance_level", String(data.clearance_level));
+        }
+        if (typeof data.clearance_progress_pct === "number") {
+          localStorage.setItem(
+            "kl_clearance_progress_pct",
+            String(data.clearance_progress_pct)
+          );
+        }
+
+        hydrateHeaderAndWelcome();
+
+        if (data.ranked_up && data.clearance_level) {
+          logEventToDashboard(
+            `[CLEARANCE] tier elevated: ${String(data.clearance_level).toUpperCase()}`
+          );
+        }
+
+        if (typeof data.successful_missions === "number") {
+          logEventToDashboard(
+            `[PROGRESS] successful missions: ${data.successful_missions}`
+          );
+        }
+
+        if (data.next_tier && typeof data.remaining === "number") {
+          logEventToDashboard(
+            `[PROGRESS] ${data.remaining} to ${String(data.next_tier).toUpperCase()}`
+          );
+        }
+      } catch (err) {
+        console.warn("[MISSIONS] completion request failed:", err);
+      }
+    }
+
+    async function refreshStarterProtocolBeacon() {
+      const token = localStorage.getItem("kl_token");
+      if (!token) return;
+
+      // Starter Protocol UI is hosted on archive.html. If this element isn't
+      // present, don't fetch.
+      if (!lastAuthBeaconEl) return;
+
+      if (lastAuthBeaconEl) {
+        lastAuthBeaconEl.textContent = "syncing…";
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/missions/starter-protocol`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.ok) {
+          if (lastAuthBeaconEl) {
+            lastAuthBeaconEl.textContent = "unavailable";
+          }
+          return;
+        }
+
+        if (lastAuthBeaconEl) {
+          lastAuthBeaconEl.textContent = data.beacon || "unavailable";
+        }
+      } catch (err) {
+        if (lastAuthBeaconEl) {
+          lastAuthBeaconEl.textContent = "unavailable";
+        }
+      }
+    }
+
+    async function submitMissionAnswer(missionId, answer) {
+      const token = localStorage.getItem("kl_token");
+      if (!token) {
+        return { ok: false, error: "Missing session token." };
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/missions/submit`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            mission_id: missionId,
+            answer
+          })
+        });
+        const data = await res.json().catch(() => null);
+
+        // If backend or middleware returns non-standard errors (e.g. {error: ...}),
+        // normalize them so the UI can display a meaningful message.
+        if (!data) {
+          return { ok: false, error: "Submission failed." };
+        }
+
+        if (!res.ok) {
+          if (typeof data.ok === "undefined") {
+            return { ok: false, error: data.error || "Submission failed." };
+          }
+          return data;
+        }
+
+        return data;
+      } catch (err) {
+        return { ok: false, error: "Submission failed." };
+      }
     }
 
 
@@ -199,6 +354,39 @@
       logWindow.scrollTop = logWindow.scrollHeight;
     }
 
+    // -------------------------------------------------------
+    // DEBRIEF + MISSION AUTOSTART HELPERS
+    // -------------------------------------------------------
+    function shouldForceDebrief() {
+      // If server has synced a value, trust it. Otherwise, fallback to localStorage.
+      const v = localStorage.getItem("kl_debrief_seen");
+      return v !== "1";
+    }
+
+    function maybeAutoStartMission() {
+      // Allows debrief.html to send the user back and auto-open Mission 01.
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("autostart") !== "initiate-01") return;
+
+      // Remove param so refresh doesn't re-open forever
+      params.delete("autostart");
+      const nextUrl =
+        window.location.pathname +
+        (params.toString() ? `?${params.toString()}` : "") +
+        window.location.hash;
+      window.history.replaceState({}, "", nextUrl);
+
+      // Mission modal + log
+      setTimeout(() => {
+        if (typeof openMissionModal === "function") {
+          openMissionModal(starterProtocolMission);
+          logEventToDashboard(
+            "[MISSION] Auto-launch INITIATE-01 (post-debrief)."
+          );
+        }
+      }, 650);
+    }
+
     function clearAuthAndReload() {
       localStorage.removeItem("kl_token");
       localStorage.removeItem("kl_asset_email");
@@ -206,7 +394,8 @@
       localStorage.removeItem("kl_user_id");
       localStorage.removeItem("kl_display_name");
       localStorage.removeItem("kl_clearance_level");
-      window.location.href = "index.html";
+      localStorage.removeItem("kl_debrief_seen");
+      window.location.href = "login.html";
     }
 
     async function verifySession() {
@@ -247,6 +436,10 @@
           localStorage.setItem("kl_display_name", data.user.display_name);
         }
 
+        // Debrief flag (server-truth)
+        if (typeof user.debrief_seen !== "undefined") {
+          localStorage.setItem("kl_debrief_seen", user.debrief_seen ? "1" : "0");
+        }
 
         return true;
       } catch (err) {
@@ -350,6 +543,8 @@
       // No splash element: just show app + optional lore
       if (!splash) {
         if (app) app.classList.remove("hidden");
+        void refreshStarterProtocolBeacon();
+        maybeAutoStartMission();
         if (showLoreAfterSplash && !hasSeenLore()) {
           // Fire and forget; no need to await here
           playLoreIntro();
@@ -371,6 +566,8 @@
         if (app) {
           app.classList.remove("hidden");
         }
+        void refreshStarterProtocolBeacon();
+        maybeAutoStartMission();
 
         // Then, if this user hasn't seen the origin dossier yet, show it
         if (showLoreAfterSplash && !hasSeenLore()) {
@@ -531,26 +728,27 @@
     const starterProtocolMission = {
       id: "starter-protocol-01",
       title: "Starter Protocol // INITIATE-01",
+      requiresAnswer: true,
       body: `
 Welcome inside the Lab, asset.
 
 Your first live operation is not about breaking ciphers — it's about proving you can observe.
 
 Inside this Orientation Dashboard, the Lab has embedded a quiet heartbeat:
-a repeating signal that marks every authenticated session.
+a per-session beacon tied to your last successful authentication.
 
 Your task:
 
-  1. Locate the element that references your "last successful authentication".
-  2. Read the exact label the Lab uses for that event.
-  3. Record that label in your field notes — it will be part of INITIATE-02.
+  1. Locate the Event Stream line that begins with [GATE].
+  2. Find the beacon token shown after "last successful authentication:".
+  3. Enter that beacon token into this mission console.
 
 No external tools are required. Everything you need is visible inside the Orientation Dashboard once you clear the gate.
       `,
       hint: `
 Watch the Event Stream panel on the right side of the Orientation Dashboard.
 
-The line you want begins with [GATE] and mentions "last successful authentication".
+    Copy the token that starts with SIG- (no external tools required).
       `
     };
 
@@ -568,11 +766,46 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
       }
 
       missionModal.classList.remove("hidden");
+
+      // Track what's open so the confirm handler can act on it
+      missionModal.setAttribute("data-mission-id", mission?.id || "");
+      missionModal.setAttribute(
+        "data-requires-answer",
+        mission?.requiresAnswer ? "1" : "0"
+      );
+
+      if (missionAnswerError) {
+        missionAnswerError.textContent = "";
+      }
+
+      if (missionAnswerBlock) {
+        const needsAnswer = !!mission?.requiresAnswer;
+        missionAnswerBlock.classList.toggle("hidden", !needsAnswer);
+      }
+
+      if (missionAnswerInput) {
+        missionAnswerInput.value = "";
+        if (mission?.requiresAnswer) {
+          setTimeout(() => missionAnswerInput.focus(), 50);
+        }
+      }
     }
 
     function closeMissionModal() {
       if (!missionModal) return;
       missionModal.classList.add("hidden");
+      missionModal.removeAttribute("data-mission-id");
+      missionModal.removeAttribute("data-requires-answer");
+
+      if (missionAnswerBlock) {
+        missionAnswerBlock.classList.add("hidden");
+      }
+      if (missionAnswerInput) {
+        missionAnswerInput.value = "";
+      }
+      if (missionAnswerError) {
+        missionAnswerError.textContent = "";
+      }
     }
 
     // Only open Starter Protocol when the button is clicked
@@ -592,11 +825,75 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
     }
 
     if (missionConfirmBtn) {
-      missionConfirmBtn.addEventListener("click", () => {
+      missionConfirmBtn.addEventListener("click", async () => {
         logEventToDashboard(
           "[MISSION] Starter Protocol briefing acknowledged by asset."
         );
         closeMissionModal();
+      });
+    }
+
+    if (missionSubmitBtn) {
+      missionSubmitBtn.addEventListener("click", async () => {
+        if (missionAnswerError) missionAnswerError.textContent = "";
+
+        const missionId = missionModal?.getAttribute("data-mission-id") || "";
+        const requiresAnswer =
+          missionModal?.getAttribute("data-requires-answer") === "1";
+
+        if (!requiresAnswer || !missionId) {
+          return;
+        }
+
+        const answer = (missionAnswerInput?.value || "").trim();
+        if (!answer) {
+          if (missionAnswerError) {
+            missionAnswerError.textContent = "Answer is required.";
+          }
+          return;
+        }
+
+        missionSubmitBtn.disabled = true;
+        try {
+          const data = await submitMissionAnswer(missionId, answer);
+
+          if (!data || !data.ok) {
+            const msg = data?.error || "Submission failed.";
+            if (missionAnswerError) missionAnswerError.textContent = msg;
+            return;
+          }
+
+          if (!data.correct) {
+            if (missionAnswerError) {
+              missionAnswerError.textContent =
+                data?.message || "Incorrect answer. Re-check the Event Stream.";
+            }
+            return;
+          }
+
+          // Apply returned progression state.
+          if (data.clearance_level) {
+            localStorage.setItem("kl_clearance_level", String(data.clearance_level));
+          }
+          if (typeof data.clearance_progress_pct === "number") {
+            localStorage.setItem(
+              "kl_clearance_progress_pct",
+              String(data.clearance_progress_pct)
+            );
+          }
+          hydrateHeaderAndWelcome();
+
+          logEventToDashboard(`[MISSION] ${missionId} completed (validated).`);
+          if (data.ranked_up && data.clearance_level) {
+            logEventToDashboard(
+              `[CLEARANCE] tier elevated: ${String(data.clearance_level).toUpperCase()}`
+            );
+          }
+
+          closeMissionModal();
+        } finally {
+          missionSubmitBtn.disabled = false;
+        }
       });
     }
 
@@ -877,6 +1174,18 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             system: true
           });
 
+          // Debrief enforcement (brand-new assets)
+          if (data.user && typeof data.user.debrief_seen !== "undefined") {
+            localStorage.setItem("kl_debrief_seen", data.user.debrief_seen ? "1" : "0");
+          } else {
+            // New signup defaults to not-seen unless server says otherwise
+            localStorage.setItem("kl_debrief_seen", "0");
+          }
+          if (shouldForceDebrief()) {
+            window.location.href = "/debrief.html";
+            return;
+          }
+
           beginAppTransition("STATUS: ACCESS GRANTED", {
             showLoreAfterSplash: true
           });
@@ -963,6 +1272,16 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
             statusIndicator.textContent = "STATUS: ACCESS GRANTED";
           }
 
+          // Debrief enforcement (new assets)
+          if (data.user && typeof data.user.debrief_seen !== "undefined") {
+            localStorage.setItem("kl_debrief_seen", data.user.debrief_seen ? "1" : "0");
+          }
+          if (shouldForceDebrief()) {
+            // Route to debrief video once, then return to auto-start Mission 01.
+            window.location.href = "/debrief.html";
+            return;
+          }
+
           // Figure out what to call the asset in the gate logs
           const rawDisplayName =
             (data.user && data.user.display_name) ||
@@ -990,8 +1309,6 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
           beginAppTransition("STATUS: ACCESS GRANTED", {
             showLoreAfterSplash: true
           });
-
-
 
         } catch (err) {
           console.error("login error:", err);
@@ -1222,6 +1539,13 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
       }
 
       // Session is valid
+
+      // Debrief enforcement (resume sessions too)
+      if (shouldForceDebrief()) {
+        window.location.href = "/debrief.html";
+        return;
+      }
+
       hydrateHeaderAndWelcome();
 
       if (statusIndicator) {
@@ -1243,6 +1567,8 @@ The line you want begins with [GATE] and mentions "last successful authenticatio
       if (app) {
         app.classList.remove("hidden");
       }
+      void refreshStarterProtocolBeacon();
+      maybeAutoStartMission();
     })();
   });
 })();

@@ -1,73 +1,147 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Kryptyk Labs — Asset Archive</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="stylesheet" href="assets/css/archive.css"/>
-  </head>
-  <body>
-    <div id="kl-root" class="kl-root">
-      <header class="kl-app-header">
-        <div class="kl-app-header-left">
-          <a href="/" class="kl-logo-link">
-            <span class="kl-logo-mark">KRYPTYK</span>
-            <span class="kl-logo-sub">LABS</span>
-          </a>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Kryptyk Labs — Asset Archive</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Fonts (same as profile) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+
+  <!-- Shared styles (same as dashboard/profile) -->
+  <link rel="stylesheet" href="assets/css/reset.css" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+
+  <!-- Page-specific styles -->
+  <link rel="stylesheet" href="assets/css/archive.css" />
+</head>
+
+<body>
+  <div class="kl-app-shell">
+    <!-- Top bar -->
+    <header class="kl-app-header">
+      <div class="kl-app-brand">
+        <div class="kl-app-logo-mark">
+          <img src="img/logo-mark.png" alt="Kryptyk Labs" />
         </div>
-        <div class="kl-app-header-right">
-          <div id="kl-header-asset-pill" class="kl-pill">
-            asset: unknown
+        <div class="kl-app-title-block">
+          <div class="kl-app-title">KRYPTYK LABS</div>
+          <div class="kl-app-subtitle">ASSET ARCHIVE</div>
+        </div>
+      </div>
+
+      <div class="kl-app-meta">
+        <span id="kl-header-asset-pill" class="kl-pill">
+          asset: unknown
+        </span>
+        <span id="kl-header-clearance-pill" class="kl-pill kl-pill-muted">
+          clearance: INITIATED
+        </span>
+
+        <a href="login.html" class="kl-btn kl-btn-ghost kl-btn-xs">
+          ORIENTATION
+        </a>
+        <a href="profile.html" class="kl-btn kl-btn-ghost kl-btn-xs">
+          PROFILE
+        </a>
+
+        <button id="kl-logout-btn" class="kl-btn kl-btn-ghost kl-btn-xs">
+          LOG OUT
+        </button>
+      </div>
+    </header>
+
+    <!-- Main archive layout -->
+    <main class="kl-app-main kl-archive-main">
+      <!-- Left: archive list -->
+      <section class="kl-panel">
+        <div class="kl-panel-header">
+          <span class="kl-panel-label">Logbook</span>
+          <div class="kl-panel-title">Asset Archive</div>
+          <p class="kl-panel-text">
+            Every briefing, mission trigger, and key system event tied to this asset.
+          </p>
+        </div>
+
+        <div id="kl-archive-error" class="kl-archive-error hidden"></div>
+
+        <div id="kl-archive-list" class="kl-archive-list">
+          <!-- populated by JS -->
+        </div>
+      </section>
+
+      <!-- Right: detail / helper text -->
+      <section class="kl-panel">
+        <div class="kl-panel-header">
+          <span class="kl-panel-label">Event</span>
+          <div class="kl-panel-title">Event Detail</div>
+        </div>
+
+        <!-- Starter Protocol mission console (moved from Orientation) -->
+        <div class="kl-detail-block">
+          <div class="kl-detail-label">Mission Console</div>
+          <div class="kl-detail-value">Starter Protocol // INITIATE-01</div>
+          <div class="kl-muted">
+            Read the beacon token in the line below, then submit it as your response.
           </div>
-          <div id="kl-header-clearance-pill" class="kl-pill">
-            clearance: INITIATED
+          <div class="kl-detail-value" style="margin-top: 8px; font-family: DM Mono, ui-monospace, monospace;">
+            [GATE] last successful authentication: <span id="kl-last-auth-beacon">syncing…</span>
           </div>
-          <button id="kl-logout-btn" class="kl-pill kl-pill-danger">
-            SIGN OUT
+          <div id="kl-starter-protocol-status" class="kl-muted hidden" style="margin-top: 8px;"></div>
+          <button id="kl-starter-protocol-open" class="kl-btn kl-btn-primary" style="margin-top: 10px;">
+            OPEN STARTER PROTOCOL
           </button>
         </div>
-      </header>
 
-      <div class="kl-app-shell">
-        <aside class="kl-app-nav">
-          <a href="/orientation" class="kl-nav-link">Orientation</a>
-          <a href="/profile" class="kl-nav-link">Asset Dossier</a>
-          <a href="/archive" class="kl-nav-link kl-nav-link-active">Archive</a>
-        </aside>
+        <div id="kl-archive-detail" class="kl-archive-detail">
+          <p class="kl-muted">
+            Select a briefing or mission from the archive to review its intel,
+            timestamps, and status.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
 
-        <main class="kl-app-main">
-          <!-- Left: archive list -->
-          <section class="kl-panel">
-            <div class="kl-panel-header">
-              <div class="kl-panel-title">Asset Archive</div>
-              <div class="kl-panel-subtitle">
-                All briefings and missions this asset has encountered.
-              </div>
-            </div>
+  <!-- MISSION MODAL (Starter Protocol) -->
+  <div id="kl-mission-modal" class="kl-mission-modal hidden">
+    <div class="kl-mission-dialog">
+      <div class="kl-mission-header">
+        <span class="kl-mission-tag">Mission Briefing</span>
+        <h2 id="kl-mission-title" class="kl-mission-title"></h2>
+      </div>
+      <div id="kl-mission-body" class="kl-mission-body"></div>
+      <div class="kl-mission-hint-block">
+        <div class="kl-mission-hint-label">Gate Hint</div>
+        <div id="kl-mission-hint" class="kl-mission-hint"></div>
+      </div>
 
-            <div id="kl-archive-error" class="kl-panel-error hidden"></div>
+      <div id="kl-mission-answer-block" class="kl-mission-hint-block">
+        <div class="kl-mission-hint-label">Answer</div>
+        <label class="kl-label" for="kl-mission-answer-input">mission response</label>
+        <input id="kl-mission-answer-input" type="text" class="kl-input" placeholder="enter token" autocomplete="off" />
+        <p id="kl-mission-answer-error" class="kl-form-error"></p>
+        <p id="kl-mission-answer-status" class="kl-muted hidden"></p>
+        <button id="kl-mission-submit" class="kl-btn kl-btn-primary kl-btn-xs">
+          Submit Answer
+        </button>
+      </div>
 
-            <div id="kl-archive-list" class="kl-archive-list">
-              <!-- populated by JS -->
-            </div>
-          </section>
-
-          <!-- Right: detail / helper text -->
-          <section class="kl-panel">
-            <div class="kl-panel-header">
-              <div class="kl-panel-title">Event Detail</div>
-            </div>
-            <div id="kl-archive-detail" class="kl-archive-detail">
-              <p class="kl-muted">
-                Select a briefing or mission from the archive to review its
-                intel, timestamps, and status.
-              </p>
-            </div>
-          </section>
-        </main>
+      <div class="kl-mission-footer">
+        <button id="kl-mission-close" class="kl-btn kl-btn-ghost kl-btn-xs">
+          Close
+        </button>
       </div>
     </div>
+  </div>
 
-    <script src="/assets/js/archive.js"></script>
-  </body>
+  <script src="assets/js/archive.js"></script>
+</body>
+
+
 </html>

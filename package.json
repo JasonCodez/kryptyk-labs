@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "migrate:mission-completions": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_mission_completions.sql",
+    "migrate:dedupe-display-names": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_dedupe_display_names.sql",
+    "migrate:unique-display-name": "node scripts/apply-sql.js kryptyk-labs-api/sql/migrations/2025-12-19_unique_display_name.sql"
   },
   "keywords": [],
   "author": "",

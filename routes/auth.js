@@ -7,7 +7,6 @@ const multer = require("multer");
 const path = require("path");
 const ACCESS_KEY_TTL_MINUTES = Number(process.env.ACCESS_KEY_TTL_MINUTES || 15);
 
-
 const crypto = require("crypto");
 
 const router = express.Router();
@@ -140,90 +139,54 @@ router.post("/request-access", async (req, res) => {
       });
     }
 
-    // 🔒 Block if this asset already has credentials
-    const existingUserRes = await db.query(
-      `
-      SELECT id, password_hash
-      FROM users
-      WHERE email = $1
-      LIMIT 1
-      `,
-      [normalizedEmail]
-    );
-
-    const existingUser = existingUserRes.rows[0];
-
-    if (existingUser && existingUser.password_hash) {
+    // If user already exists and has a password set, force them to sign in.
+    const existing = await findUserByEmail(normalizedEmail);
+    if (existing && existing.password_hash) {
       return res.status(400).json({
         ok: false,
         error:
-          "This asset already has clearance credentials. Use SIGN IN to access the lab."
+          "This asset already has credentials. Use SIGN IN to authenticate."
       });
     }
 
-    // 1) Generate a numeric 6-digit key, e.g. "482190"
-    const rawKey = crypto
-      .randomInt(0, 1_000_000)
-      .toString()
-      .padStart(6, "0");
+    // Create a user placeholder if one doesn't exist (so we have a user_id)
+    let user = existing;
+    if (!user) {
+      const insertUser = await db.query(
+        `INSERT INTO users (email, clearance_level, clearance_progress_pct, created_at, is_verified)
+         VALUES ($1, 'INITIATED', 0, NOW(), FALSE)
+         RETURNING id, email, display_name, clearance_level, clearance_progress_pct`,
+        [normalizedEmail]
+      );
+      user = insertUser.rows[0];
+      console.log("[REQUEST-ACCESS] created placeholder user:", user.id);
+    }
 
-    // 2) Random drift 0–9 (or 1–9 if you prefer)
-    const shift = crypto.randomInt(0, 10);
+    // Generate a 6-digit key
+    const rawKey = generateSixDigitKey();
+    const key_hash = await hashKey(rawKey);
 
-    // 3) Cipher = each digit shifted forward by `shift` mod 10
-    const cipher = rawKey
-      .split("")
-      .map((ch) => {
-        const d = parseInt(ch, 10);
-        return ((d + shift) % 10).toString();
-      })
-      .join("");
+    // Choose a numeric shift (1–9)
+    const shift = Math.floor(Math.random() * 9) + 1;
+    const cipher = encryptKeyWithShift(rawKey, shift);
 
-    // 4) Hash the ORIGINAL numeric key
-    const keyHash = await bcrypt.hash(rawKey, 10);
+    const ttl = ACCESS_KEY_TTL_MINUTES;
+    const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
 
-    // 5) Store in access_keys
+    // Store key tied to email (your later flow uses email)
     await db.query(
-      `
-      INSERT INTO access_keys (
-        email,
-        key_hash,
-        created_at,
-        expires_at,
-        used_at,
-        attempts,
-        used
-      )
-      VALUES (
-        $1,
-        $2,
-        NOW(),
-        NOW() + interval '${ACCESS_KEY_TTL_MINUTES} minutes',
-        NULL,
-        0,
-        FALSE
-      )
-      `,
-      [normalizedEmail, keyHash]
+      `INSERT INTO access_keys (email, user_id, key_hash, created_at, expires_at, used, attempts)
+       VALUES ($1, $2, $3, NOW(), $4, FALSE, 0)`,
+      [normalizedEmail, user.id, key_hash, expiresAt]
     );
 
-    console.log(
-      "[ACCESS KEY GENERATED]",
-      normalizedEmail,
-      "rawKey=",
-      rawKey,
-      "cipher=",
-      cipher,
-      "shift=",
-      shift
-    );
+    console.log("[REQUEST-ACCESS] shift:", shift, "rawKey(test):", rawKey);
 
     return res.json({
       ok: true,
-      message: "Access key generated and dispatched.",
+      message: "Access key dispatched (ciphered).",
       cipher,
-      shift,
-      debug_key: rawKey // remove once you're done testing
+      shift
     });
   } catch (err) {
     console.error("request-access error:", err);
@@ -236,146 +199,73 @@ router.post("/request-access", async (req, res) => {
 
 // -------------------------------------------------------------
 // VERIFY KEY (Step 2)
-// Expects the *real* 6-digit key, not the cipher
 // -------------------------------------------------------------
-// -------------------------------------------------------------
-// VERIFY ACCESS KEY
-// -------------------------------------------------------------
-const MAX_KEY_ATTEMPTS = 5;
-
 router.post("/verify-key", async (req, res) => {
   try {
-    console.log("[VERIFY-KEY] incoming body:", req.body);
+    const { email, key } = req.body || {};
+    const normalizedEmail = normalizeEmail(email);
 
-    const { email, key } = req.body;
-
-    // Basic validation
-    if (!email || typeof email !== "string") {
-      return res.status(400).json({
-        ok: false,
-        error: "Valid email is required."
-      });
+    if (!normalizedEmail || !/\S+@\S+\.\S+/.test(normalizedEmail)) {
+      return res.status(400).json({ ok: false, error: "Invalid email." });
     }
     if (!key || typeof key !== "string") {
-      return res.status(400).json({
-        ok: false,
-        error: "Valid access key is required."
-      });
+      return res.status(400).json({ ok: false, error: "Key is required." });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const submittedKey = key.trim(); // decrypted 6-digit key
-    const now = new Date();
-
-    // Fetch the latest access_key row for this email
-    const { rows } = await db.query(
-      `
-      SELECT id, email, key_hash, created_at, expires_at, used, attempts
-      FROM access_keys
-      WHERE email = $1
-      ORDER BY created_at DESC
-      LIMIT 1
-      `,
+    // Find the newest access key row for this email
+    const keyRes = await db.query(
+      `SELECT id, key_hash, expires_at, used, attempts
+       FROM access_keys
+       WHERE email = $1
+       ORDER BY created_at DESC
+       LIMIT 1`,
       [normalizedEmail]
     );
 
-    if (rows.length === 0) {
+    const row = keyRes.rows[0];
+    if (!row) {
       return res.status(400).json({
         ok: false,
-        error:
-          "No access key found for that email. Request a new key from the gate."
+        error: "No access key found. Request a new key."
       });
     }
 
-    const keyRow = rows[0];
-
-    // Hard stops
-    if (keyRow.used) {
+    if (row.used) {
       return res.status(400).json({
         ok: false,
-        error: "This access key has already been used."
+        error: "This access key has already been used. Request a new one."
       });
     }
 
-    if (keyRow.attempts >= MAX_KEY_ATTEMPTS) {
-      return res.status(400).json({
-        ok: false,
-        error: "Too many attempts. Request a new access key."
-      });
-    }
-
-    if (keyRow.expires_at && new Date(keyRow.expires_at) < now) {
+    if (row.expires_at && new Date(row.expires_at) < new Date()) {
       return res.status(400).json({
         ok: false,
         error: "This access key has expired. Request a new one."
       });
     }
 
-    // Compare submitted key (plain 6-digit) with stored hash
-    const isMatch = await bcrypt.compare(submittedKey, keyRow.key_hash);
-
-    console.log("[VERIFY-KEY] compare result", {
-      normalizedEmail,
-      submittedKey,
-      isMatch
-    });
-
-    if (!isMatch) {
-      // bump attempts on failure
+    // Compare provided key against hash
+    const ok = await bcrypt.compare(key, row.key_hash);
+    if (!ok) {
+      // increment attempts
       await db.query(
-        `UPDATE access_keys SET attempts = attempts + 1 WHERE id = $1`,
-        [keyRow.id]
+        `UPDATE access_keys SET attempts = COALESCE(attempts, 0) + 1 WHERE id = $1`,
+        [row.id]
       );
-
       return res.status(400).json({
         ok: false,
-        error: "Access key invalid. Check your decryption."
+        error: "Invalid access key."
       });
     }
 
-    // ✅ KEY IS VALID – ensure a user record exists (no password yet)
-    const userResult = await db.query(
-      `
-      SELECT id, email, display_name, clearance_level, clearance_progress_pct
-      FROM users
-      WHERE email = $1
-      `,
-      [normalizedEmail]
-    );
-
-    let user = userResult.rows[0];
-
+    // Find user now (for returning info)
+    let user = await findUserByEmail(normalizedEmail);
     if (!user) {
-      // Initial user creation for new asset
-      const insertUser = await db.query(
-        `
-        INSERT INTO users (
-          email,
-          password_hash,
-          display_name,
-          clearance_level,
-          clearance_progress_pct,
-          created_at,
-          last_login_at,
-          is_verified
-        )
-        VALUES (
-          $1,
-          NULL,
-          NULL,
-          'INITIATED',
-          5,
-          NOW(),
-          NULL,
-          FALSE
-        )
-        RETURNING id, email, display_name, clearance_level, clearance_progress_pct
-        `,
-        [normalizedEmail]
-      );
-
-      user = insertUser.rows[0];
-      console.log("[VERIFY-KEY] created new user for", normalizedEmail);
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Asset record not found for this email. Request access again."
+      });
     }
 
     // We do NOT mark the key as used here anymore.
@@ -400,7 +290,6 @@ router.post("/verify-key", async (req, res) => {
     });
   }
 });
-
 
 // -------------------------------------------------------------
 // COMPLETE SIGNUP (Step 3)
@@ -522,7 +411,9 @@ router.post("/complete-signup", async (req, res) => {
     email,
     display_name,
     clearance_level,
-    clearance_progress_pct
+    clearance_progress_pct,
+    debrief_seen,
+    debrief_seen_at
   `,
         [normalizedEmail, passwordHash, display_name || null]
       );
@@ -549,7 +440,8 @@ router.post("/complete-signup", async (req, res) => {
         email: user.email,
         display_name: user.display_name,
         clearance_level: user.clearance_level,
-        clearance_progress_pct: user.clearance_progress_pct
+        clearance_progress_pct: user.clearance_progress_pct,
+        debrief_seen: !!user.debrief_seen
       };
 
       const token = signToken(safeUser);
@@ -635,7 +527,8 @@ router.post("/login", async (req, res) => {
       email: user.email,
       display_name: user.display_name || null,
       clearance_level:
-        updated.clearance_level || user.clearance_level || "INITIATED"
+        updated.clearance_level || user.clearance_level || "INITIATED",
+      debrief_seen: !!user.debrief_seen
     };
 
     const token = signToken(safeUser);
@@ -662,8 +555,6 @@ router.post("/login", async (req, res) => {
       token,
       user: safeUser
     });
-
-
   } catch (err) {
     console.error("login error:", err);
     return res.status(500).json({ error: "Internal server error." });
@@ -709,23 +600,18 @@ router.post("/request-reset", async (req, res) => {
       });
     }
 
-    // (Optional) if you want to require verified accounts only:
-    // if (!user.is_verified) {
-    //   return res.status(400).json({
-    //     ok: false,
-    //     error: "This asset has not completed initial verification."
-    //   });
-    // }
-
     // 2) Generate reset key
     const plainKey = Math.floor(100000 + Math.random() * 900000).toString();
-    const keyHash = await bcrypt.hash(plainKey, BCRYPT_ROUNDS);
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
+    const keyHash = await bcrypt.hash(plainKey, rounds);
 
     // 3) Insert reset key into access_keys INCLUDING email
     const insertKeySql = `
       INSERT INTO access_keys (
         email,
+        user_id,
         key_hash,
+        kind,
         created_at,
         expires_at,
         used_at,
@@ -735,6 +621,8 @@ router.post("/request-reset", async (req, res) => {
       VALUES (
         $1,
         $2,
+        $3,
+        'reset',
         NOW(),
         NOW() + interval '15 minutes',
         NULL,
@@ -745,7 +633,7 @@ router.post("/request-reset", async (req, res) => {
     `;
 
     console.log("[REQUEST-RESET] inserting reset key for:", email);
-    const keyResult = await db.query(insertKeySql, [email, keyHash]);
+    const keyResult = await db.query(insertKeySql, [email, user.id, keyHash]);
     console.log("[REQUEST-RESET] inserted access_key row (reset):", keyResult.rows[0]);
 
     // 4) TODO: send reset email here using your mailer (with plainKey)
@@ -764,6 +652,150 @@ router.post("/request-reset", async (req, res) => {
   }
 });
 
+// -------------------------------------------------------------
+// PASSWORD RESET: complete-reset
+// Body: { email, key, password }
+// -------------------------------------------------------------
+router.post("/complete-reset", async (req, res) => {
+  try {
+    const rawEmail = req.body?.email;
+    const key = req.body?.key;
+    const password = req.body?.password;
+
+    const email = normalizeEmail(rawEmail);
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      return res.status(400).json({ ok: false, error: "Invalid email." });
+    }
+    if (!key || typeof key !== "string") {
+      return res.status(400).json({ ok: false, error: "Reset key is required." });
+    }
+    if (!password || typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({
+        ok: false,
+        error: "Password must be at least 8 characters."
+      });
+    }
+
+    // Find user (do not leak if missing; respond generic-ish)
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.status(400).json({
+        ok: false,
+        error: "Reset failed. Request a new reset key and try again."
+      });
+    }
+
+    // Find newest reset key row for this email
+    const keyRes = await db.query(
+      `SELECT id, key_hash, expires_at, used, attempts
+       FROM access_keys
+       WHERE email = $1
+         AND kind = 'reset'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [email]
+    );
+
+    const row = keyRes.rows[0];
+    if (!row) {
+      return res.status(400).json({
+        ok: false,
+        error: "No reset key found. Request a new one."
+      });
+    }
+    if (row.used) {
+      return res.status(400).json({
+        ok: false,
+        error: "This reset key has already been used. Request a new one."
+      });
+    }
+    if (row.expires_at && new Date(row.expires_at) < new Date()) {
+      return res.status(400).json({
+        ok: false,
+        error: "This reset key has expired. Request a new one."
+      });
+    }
+
+    const ok = await bcrypt.compare(key, row.key_hash);
+    if (!ok) {
+      await db.query(
+        `UPDATE access_keys SET attempts = COALESCE(attempts, 0) + 1 WHERE id = $1`,
+        [row.id]
+      );
+      return res.status(400).json({ ok: false, error: "Invalid reset key." });
+    }
+
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
+    const passwordHash = await bcrypt.hash(password, rounds);
+
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      await client.query(
+        `UPDATE users
+         SET password_hash = $1,
+             is_verified = TRUE
+         WHERE id = $2`,
+        [passwordHash, user.id]
+      );
+
+      await client.query(
+        `UPDATE access_keys
+         SET used = TRUE,
+             used_at = COALESCE(used_at, NOW())
+         WHERE id = $1`,
+        [row.id]
+      );
+
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("complete-reset error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, error: "Failed to complete reset." });
+  }
+});
+
+// -------------------------------------------------------------
+// ONBOARDING: mark debrief as seen (one-time)
+// -------------------------------------------------------------
+router.post("/debrief-complete", async (req, res) => {
+  try {
+    const auth = req.headers.authorization || "";
+    const token = auth.replace("Bearer ", "");
+
+    if (!token) return res.status(401).json({ ok: false });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "changeme");
+    } catch (e) {
+      return res.status(401).json({ ok: false });
+    }
+
+    await db.query(
+      `UPDATE users
+       SET debrief_seen = TRUE,
+           debrief_seen_at = COALESCE(debrief_seen_at, NOW())
+       WHERE id = $1`,
+      [decoded.id]
+    );
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("debrief-complete error:", err);
+    return res.status(500).json({ ok: false, error: "Internal server error." });
+  }
+});
 
 // -------------------------------------------------------------
 // AUTH ME (session validation)
@@ -789,7 +821,9 @@ router.get("/me", async (req, res) => {
          display_name,
          clearance_level,
          created_at,
-         last_login_at
+         last_login_at,
+         debrief_seen,
+         debrief_seen_at
        FROM users
        WHERE id = $1`,
       [decoded.id]

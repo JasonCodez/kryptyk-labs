@@ -17,9 +17,10 @@
   <!-- Shared styles -->
   <link rel="stylesheet" href="assets/css/reset.css" />
   <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/profile.css" />
 </head>
 
-<body>
+<body class="kl-profile-page">
   <div class="kl-app-shell">
     <!-- Top bar -->
     <header class="kl-app-header">
@@ -40,7 +41,7 @@
           clearance: —
         </span>
 
-        <a href="index.html" class="kl-btn kl-btn-ghost kl-btn-xs">
+        <a href="login.html" class="kl-btn kl-btn-ghost kl-btn-xs">
           ORIENTATION
         </a>
         <a href="archive.html" class="kl-btn kl-btn-ghost kl-btn-xs">
@@ -63,7 +64,7 @@
         </div>
 
         <!-- Top-level error banner -->
-        <div id="kl-profile-error" class="kl-form-error" style="display:none; margin-bottom:8px;"></div>
+        <div id="kl-profile-error" class="kl-form-error kl-profile-error-banner"></div>
 
         <div class="kl-panel-body">
           <p class="kl-panel-text">
@@ -90,27 +91,11 @@
             </li>
           </ul>
           <!-- Display Name block -->
-          <div style="
-                margin-top:14px;
-                padding:10px 12px;
-                border-radius:12px;
-                border:1px solid rgba(88,112,196,0.7);
-                background:radial-gradient(circle at top left,#090f25,#040615);
-              ">
-            <div style="
-                  font-size:0.7rem;
-                  text-transform:uppercase;
-                  letter-spacing:0.16em;
-                  color:rgba(155,178,250,0.9);
-                  margin-bottom:4px;
-                ">
+          <div class="kl-profile-card">
+            <div class="kl-profile-card-label">
               Display Name
             </div>
-            <div id="kl-display-name-helper" style="
-                  font-size:0.82rem;
-                  color:rgba(210,220,255,0.9);
-                  margin-bottom:6px;
-                ">
+            <div id="kl-display-name-helper" class="kl-profile-card-helper">
               Choose how the lab should address this asset in briefings and
               logs.
             </div>
@@ -121,39 +106,26 @@
                 SAVE NAME
               </button>
             </form>
-            <div id="kl-display-name-error" class="kl-form-error" style="margin-top:2px;"></div>
+            <div id="kl-display-name-error" class="kl-form-error kl-profile-inline-error"></div>
           </div>
           <!-- Motto block -->
-          <div style="
-                margin-top:14px;
-                padding:10px 12px;
-                border-radius:12px;
-                border:1px solid rgba(88,112,196,0.7);
-                background:radial-gradient(circle at top left,#090f25,#040615);
-              ">
-            <div style="
-                  font-size:0.7rem;
-                  text-transform:uppercase;
-                  letter-spacing:0.16em;
-                  color:rgba(155,178,250,0.9);
-                  margin-bottom:4px;
-                ">
+          <div class="kl-profile-card">
+            <div class="kl-profile-card-label">
               Field Motto
             </div>
-            <div id="kl-profile-motto-display"
-              style="font-size:0.82rem; color:rgba(226,232,255,0.95); margin-bottom:6px;">
+            <div id="kl-profile-motto-display" class="kl-profile-motto-display">
               No field motto set. The lab is listening…
             </div>
 
-            <form id="kl-motto-form" class="kl-form" style="gap:4px; margin-top:4px;">
-              <label for="kl-motto-input" class="kl-label" style="font-size:0.68rem;">
+            <form id="kl-motto-form" class="kl-form kl-profile-motto-form">
+              <label for="kl-motto-input" class="kl-label kl-profile-motto-label">
                 Update Motto
               </label>
               <input id="kl-motto-input" type="text" class="kl-input" placeholder="eg. THERE IS PATTERN IN THE NOISE" />
               <button type="submit" class="kl-btn kl-btn-xs">
                 SAVE MOTTO
               </button>
-              <div id="kl-motto-error" class="kl-form-error" style="margin-top:2px;"></div>
+              <div id="kl-motto-error" class="kl-form-error kl-profile-inline-error"></div>
             </form>
           </div>
         </div>
@@ -194,28 +166,10 @@
             on lab activity and mission performance indices.
           </p>
 
-          <div style="
-                margin-top:6px;
-                background:rgba(15,23,42,0.8);
-                border-radius:999px;
-                border:1px solid rgba(129,140,248,0.5);
-                padding:2px;
-                overflow:hidden;
-              ">
-            <div id="kl-clearance-progress" style="
-                  width:5%;
-                  height:10px;
-                  border-radius:999px;
-                  background:linear-gradient(90deg,#4c6fff,#22d3ee);
-                  transition:width 0.4s ease-out;
-                "></div>
+          <div class="kl-clearance-progress-track">
+            <div id="kl-clearance-progress" class="kl-clearance-progress-bar"></div>
           </div>
-          <div id="kl-clearance-progress-label" style="
-                margin-top:4px;
-                font-size:0.75rem;
-                font-family:'DM Mono', ui-monospace, monospace;
-                color:rgba(191,219,254,0.9);
-              ">
+          <div id="kl-clearance-progress-label" class="kl-clearance-progress-label">
             5%
           </div>
         </div>
@@ -230,7 +184,7 @@
             Recent events involving this asset. High-signal anomalies will be
             mirrored to the main gate logs.
           </p>
-          <div id="kl-profile-logs" class="kl-log-window" style="max-height:150px;">
+          <div id="kl-profile-logs" class="kl-log-window kl-profile-logs">
             <!-- Filled by profile.js -->
           </div>
         </div>
@@ -244,13 +198,8 @@
           <p class="kl-subpanel-text">
             From here you can exit your active session or return to the orientation console.
           </p>
-          <div style="
-                display:flex;
-                gap:8px;
-                flex-wrap:wrap;
-                margin-top:6px;
-              ">
-            <a href="index.html" class="kl-btn kl-btn-ghost kl-btn-xs">
+          <div class="kl-profile-controls-row">
+            <a href="login.html" class="kl-btn kl-btn-ghost kl-btn-xs">
               Return to Orientation
             </a>
             <button id="kl-profile-logout-btn-duplicate" class="kl-btn kl-btn-xs">

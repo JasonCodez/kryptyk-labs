@@ -1,6 +1,10 @@
 // routes/profile.js
 const express = require("express");
 const db = require("../db");
+const {
+  clearanceForSuccessfulMissions,
+  progressPctToNextTier
+} = require("../kryptyk-labs-api/clearance");
 async function logAssetEvent(userId, eventType, message, meta) {
   try {
     await db.query(
@@ -67,18 +71,36 @@ router.get("/summary", authMiddleware, async (req, res) => {
     // Sector is derived in code, not stored in DB
     const sector = deriveSector(user.id, user.email);
 
-    const clearance = (user.clearance_level || "INITIATED").toUpperCase();
+    // Authoritative mission progress
+    let missionsCompleted = 0;
+    try {
+      const mc = await db.query(
+        "SELECT COUNT(*)::int AS c FROM mission_completions WHERE user_id = $1 AND success = TRUE",
+        [user.id]
+      );
+      missionsCompleted = mc.rows[0]?.c || 0;
+    } catch (err) {
+      // If table doesn't exist yet in a fresh DB, keep 0.
+      if (err.code !== "42P01") {
+        throw err;
+      }
+    }
 
-    // Use stored clearance_progress_pct or default to 5
-    const rawProgress =
-      typeof user.clearance_progress_pct === "number"
-        ? user.clearance_progress_pct
-        : 5;
-    const progressPct = Math.max(0, Math.min(100, rawProgress));
+    const computedClearance = clearanceForSuccessfulMissions(missionsCompleted);
+    const progressPct = progressPctToNextTier(missionsCompleted);
 
-    // XP / missions = placeholders for now
+    // Keep users table synced to authoritative rules (non-fatal if table missing).
+    try {
+      await db.query(
+        "UPDATE users SET clearance_level = $1, clearance_progress_pct = $2 WHERE id = $3",
+        [computedClearance, progressPct, user.id]
+      );
+    } catch (err) {
+      console.warn("[PROFILE] failed to sync clearance/progress:", err.message);
+    }
+
+    const clearance = computedClearance;
     const xp = 0;
-    const missionsCompleted = 0;
 
     // Try to load logs; if the table doesn't exist, just return an empty list
     let logs = [];
@@ -153,8 +175,9 @@ router.put("/settings", authMiddleware, async (req, res) => {
 
     // Display name update (optional)
     if (typeof display_name !== "undefined") {
+      const normalizedDisplayName = String(display_name || "").trim();
       updates.push(`display_name = $${idx}`);
-      values.push(display_name || null);
+      values.push(normalizedDisplayName.length ? normalizedDisplayName : null);
       idx++;
     }
 
@@ -192,6 +215,15 @@ router.put("/settings", authMiddleware, async (req, res) => {
 
     return res.json({ ok: true });
   } catch (err) {
+    if (err && err.code === "23505") {
+      // Unique violation (display name already taken)
+      if (err.constraint === "idx_users_display_name_unique") {
+        return res.status(409).json({
+          ok: false,
+          error: "Display name already in use. Choose a different name."
+        });
+      }
+    }
     console.error("/api/profile/settings error:", err);
     return res
       .status(500)

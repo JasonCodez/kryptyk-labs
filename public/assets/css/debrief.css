@@ -1,0 +1,32 @@
+.kl-debrief-wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 14px;
+}
+
+.kl-debrief-card {
+  margin-top: 12px;
+}
+
+.kl-debrief-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.kl-debrief-muted {
+  opacity: 0.86;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.kl-debrief-mono {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.kl-debrief-error {
+  margin-top: 10px;
+}

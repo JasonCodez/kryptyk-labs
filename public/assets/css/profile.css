@@ -597,3 +597,146 @@
     height: 72px;
   }
 }
+
+/* =========================================================
+   PROFILE PAGE — VISUAL REFINEMENTS
+   Keeps layout, upgrades presentation to match dashboard
+   ========================================================= */
+
+/* Shell: align with main app card aesthetic */
+.kl-profile-page .kl-app-shell {
+  max-width: 1080px;
+  margin: 20px auto 32px;
+  padding: 18px 22px 24px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(111, 140, 255, 0.09), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(0, 255, 195, 0.07), transparent 55%),
+    rgba(2, 4, 16, 0.96);
+  border: 1px solid rgba(88, 112, 210, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(8, 12, 32, 0.85),
+    0 24px 60px rgba(0, 0, 0, 0.85);
+}
+
+/* Header line slightly stronger on profile */
+.kl-profile-page .kl-app-header {
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px dashed rgba(120, 140, 220, 0.6);
+}
+
+/* Panels: slimmer, dossier-style */
+.kl-profile-page .kl-panel {
+  border-radius: 18px;
+  background:
+    linear-gradient(150deg, rgba(7, 11, 28, 0.98), rgba(3, 7, 18, 0.98));
+  border: 1px solid rgba(104, 132, 230, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(6, 10, 28, 0.9),
+    0 18px 40px rgba(0, 0, 0, 0.85);
+}
+
+/* Bio signal strip: a bit more subtle */
+.kl-profile-page .kl-bio-signal {
+  opacity: 0.7;
+}
+
+/* Motto input blends better into panel */
+.kl-profile-page .kl-motto-input {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(99, 102, 241, 0.6);
+}
+
+/* Submit button feels like a small lab control */
+.kl-profile-page .kl-motto-save {
+  border-radius: 999px;
+  padding-inline: 14px;
+}
+
+/* =========================================================
+   Profile page utilities (merged from profile-page.css)
+   ========================================================= */
+
+.kl-profile-page .kl-profile-error-banner {
+  display: none;
+  margin-bottom: 8px;
+}
+
+.kl-profile-page .kl-profile-card {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(88, 112, 196, 0.7);
+  background: radial-gradient(circle at top left, #090f25, #040615);
+}
+
+.kl-profile-page .kl-profile-card-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(155, 178, 250, 0.9);
+  margin-bottom: 4px;
+}
+
+.kl-profile-page .kl-profile-card-helper {
+  font-size: 0.82rem;
+  color: rgba(210, 220, 255, 0.9);
+  margin-bottom: 6px;
+}
+
+.kl-profile-page .kl-profile-inline-error {
+  margin-top: 2px;
+}
+
+.kl-profile-page .kl-profile-motto-display {
+  font-size: 0.82rem;
+  color: rgba(226, 232, 255, 0.95);
+  margin-bottom: 6px;
+}
+
+.kl-profile-page .kl-profile-motto-form {
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.kl-profile-page .kl-profile-motto-label {
+  font-size: 0.68rem;
+}
+
+.kl-profile-page .kl-clearance-progress-track {
+  margin-top: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 999px;
+  border: 1px solid rgba(129, 140, 248, 0.5);
+  padding: 2px;
+  overflow: hidden;
+}
+
+.kl-profile-page .kl-clearance-progress-bar {
+  width: 5%;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4c6fff, #22d3ee);
+  transition: width 0.4s ease-out;
+}
+
+.kl-profile-page .kl-clearance-progress-label {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-family: "DM Mono", ui-monospace, monospace;
+  color: rgba(191, 219, 254, 0.9);
+}
+
+.kl-profile-page .kl-profile-logs {
+  max-height: 150px;
+}
+
+.kl-profile-page .kl-profile-controls-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+

@@ -1,369 +1,41 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<!doctype html>
+<html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <title>Kryptyk Labs — Access Gate</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Kryptyk Labs — cryptographic trials, ARG puzzles, and initiation protocols." />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kryptyk Labs — Restricted Access</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@300;400;500&display=swap"
-        rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet" />
 
-    <link rel="stylesheet" href="assets/css/reset.css" />
-    <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/reset.css" />
+
+  <link rel="stylesheet" href="assets/css/index.css" />
 </head>
 
 <body>
-    <!-- SPLASH LOGO OVERLAY (HIDDEN BY DEFAULT) -->
-    <div id="kl-splash" class="kl-splash hidden" style="display: none;">
-        <div class="kl-splash-inner">
-            <img src="img/logo-mark.png" alt="Kryptyk Labs" class="kl-splash-logo" />
-            <div class="kl-splash-text">You are entering a secure server</div>
-            <div class="kl-splash-text">Unauthorized access will be logged</div>
-            <div class="kl-splash-sub">ACCESS CHANNEL ESTABLISHED</div>
-        </div>
+  <main class="frame">
+    <div class="hdr">
+      <span>KRYPTYK LABS</span>
+      <span>RESTRICTED ACCESS</span>
     </div>
 
-    <!-- LORE INTRO OVERLAY -->
-    <div id="kl-lore" class="kl-lore" style="display: none;">
-        <div class="kl-lore-inner">
-            <div class="kl-lore-header">
-                <span class="kl-lore-tag">ORIGIN DOSSIER // RED-LINE</span>
-                <h1 class="kl-lore-title">Signal Event // 1984-Δ</h1>
-            </div>
+    <div class="body">
+      <pre class="term" id="typeTarget"><span class="muted"></span>
+<span class="strong"></span></pre>
 
-            <div id="kl-lore-body" class="kl-lore-body">
-                <!-- Lines are injected by JS with a typewriter effect -->
-            </div>
-
-            <div class="kl-lore-controls">
-                <button id="kl-lore-skip" class="kl-btn kl-btn-ghost kl-btn-xs">
-                    Skip
-                </button>
-                <button id="kl-lore-continue" class="kl-btn kl-btn-xs">
-                    Enter Orientation
-                </button>
-            </div>
-        </div>
+      <div class="actions" id="introActions">
+        <a class="btn" href="/login.html">Proceed to Access Gate</a>
+      </div>
     </div>
+  </main>
 
-    <!-- ACCESS GATE / PRELOADER -->
-    <div id="kl-preloader">
-        <div class="kl-preloader-inner">
-            <div class="kl-logo-row">
-                <img src="img/logo-mark.png" alt="Kryptyk Labs" class="kl-logo-mark" />
-                <div class="kl-logo-text">
-                    <div class="kl-logo-title">KRYPTYK LABS</div>
-                    <div class="kl-logo-sub">ACCESS CONTROL TERMINAL</div>
-                </div>
-            </div>
+  <script src="assets/js/index.js"></script>
 
-            <div class="kl-terminal-window">
-                <div class="kl-terminal-header">
-                    <span class="dot dot-red"></span>
-                    <span class="dot dot-yellow"></span>
-                    <span class="dot dot-green"></span>
-                    <span class="kl-terminal-title">/gate sequence</span>
-                </div>
-
-                <div class="kl-terminal-body">
-                    <!-- Log output -->
-                    <div id="kl-terminal-output" class="kl-terminal-output"></div>
-
-                    <!-- Multi-step forms -->
-                    <div class="kl-form-wrapper">
-                        <!-- TABS: SIGNUP vs LOGIN -->
-                        <div class="kl-form-tabs">
-                            <button type="button" class="kl-tab kl-tab-active" data-tab="signup">
-                                Request Access
-                            </button>
-                            <button type="button" class="kl-tab" data-tab="login">
-                                Sign In
-                            </button>
-                        </div>
-
-                        <!-- STEP 1: EMAIL (SIGNUP) -->
-                        <form id="kl-email-form" class="kl-form" novalidate>
-                            <div class="kl-form-title">Step 1 — Request Access Key</div>
-                            <label class="kl-label" for="kl-email-input">
-                                asset email
-                            </label>
-                            <input id="kl-email-input" type="email" class="kl-input" placeholder="you@domain.com"
-                                autocomplete="email" required />
-                            <button type="submit" class="kl-btn">
-                                REQUEST ACCESS KEY
-                            </button>
-                            <p class="kl-form-hint">
-                                We’ll transmit a one-time access key to this address.
-                            </p>
-                            <p id="kl-email-error" class="kl-form-error"></p>
-                        </form>
-
-                        <!-- STEP 2: ACCESS KEY (SIGNUP) -->
-                        <form id="kl-key-form" class="kl-form kl-form-hidden" novalidate>
-                            <div class="kl-form-title">Step 2 — Verify Access Key</div>
-                            <p class="kl-form-hint" id="kl-key-hint">
-                                Enter the decoded access key for clearance verification.
-                                <!-- <span class="kl-inline-email">[pending]</span>. -->
-                            </p>
-                            <label class="kl-label" for="kl-key-input">
-                                access key
-                            </label>
-                            <input id="kl-key-input" type="text" class="kl-input" placeholder="XXXXXX"
-                                autocomplete="one-time-code" required />
-                            <button type="submit" class="kl-btn">
-                                VERIFY ACCESS KEY
-                            </button>
-                            <p id="kl-key-error" class="kl-form-error"></p>
-                        </form>
-
-                        <!-- STEP 3: PASSWORD (SIGNUP) -->
-                        <form id="kl-password-form" class="kl-form kl-form-hidden" novalidate>
-                            <div class="kl-form-title">Step 3 — Establish Clearance</div>
-                            <p class="kl-form-hint">
-                                Create a secure password for your Kryptyk Labs clearance.
-                            </p>
-
-                            <label class="kl-label" for="kl-password-input">
-                                Choose Password
-                            </label>
-                            <input id="kl-password-input" type="password" class="kl-input"
-                                placeholder="minimum 8 characters" autocomplete="new-password" required />
-
-                            <label class="kl-label" for="kl-password-confirm-input">
-                                confirm password
-                            </label>
-                            <input id="kl-password-confirm-input" type="password" class="kl-input"
-                                placeholder="retype password" autocomplete="new-password" required />
-
-                            <button type="submit" class="kl-btn">
-                                SECURE CLEARANCE
-                            </button>
-                            <p id="kl-password-error" class="kl-form-error"></p>
-                        </form>
-
-                        <!-- LOGIN FORM (EXISTING USERS) -->
-                        <form id="kl-login-form" class="kl-form kl-form-hidden" novalidate>
-                            <div class="kl-form-title">Sign in</div>
-
-                            <label class="kl-label" for="kl-login-email-input">Asset Email</label>
-                            <input id="kl-login-email-input" type="email" class="kl-input"
-                                placeholder="you@kryptyk.asset" autocomplete="email" />
-
-                            <label class="kl-label" for="kl-login-password-input">Clearance Password</label>
-                            <input id="kl-login-password-input" type="password" class="kl-input" placeholder="••••••••"
-                                autocomplete="current-password" />
-
-                            <div id="kl-login-error" class="kl-form-error"></div>
-
-                            <button type="submit" class="kl-btn">Sign in</button>
-
-                            <div class="kl-form-hint">
-                                Forgot your clearance password?
-                                <button type="button" id="kl-open-reset" class="kl-link-btn">
-                                    Initiate reset protocol
-                                </button>
-                            </div>
-                        </form>
-
-                        <!-- RESET STEP 1: REQUEST RESET KEY -->
-                        <form id="kl-reset-request-form" class="kl-form kl-form-hidden" novalidate>
-                            <div class="kl-form-title">Reset clearance — Step 1</div>
-
-                            <label class="kl-label" for="kl-reset-email-input">Asset Email</label>
-                            <input id="kl-reset-email-input" type="email" class="kl-input"
-                                placeholder="you@kryptyk.asset" autocomplete="email" />
-
-                            <div id="kl-reset-email-error" class="kl-form-error"></div>
-
-                            <button type="submit" class="kl-btn">Transmit reset key</button>
-
-                            <div class="kl-form-hint">
-                                <button type="button" id="kl-reset-back-1" class="kl-link-btn">
-                                    ⬅ Back to sign in
-                                </button>
-                            </div>
-                        </form>
-
-                        <!-- RESET STEP 2: ENTER RESET KEY + NEW PASSWORD -->
-                        <form id="kl-reset-complete-form" class="kl-form kl-form-hidden" novalidate>
-                            <div class="kl-form-title">Reset clearance — Step 2</div>
-
-                            <p class="kl-form-hint">
-                                Enter the reset key you received, then set a new clearance password.
-                            </p>
-
-                            <label class="kl-label" for="kl-reset-key-input">Reset Key</label>
-                            <input id="kl-reset-key-input" type="text" class="kl-input" placeholder="6-digit reset key"
-                                autocomplete="one-time-code" />
-
-                            <label class="kl-label" for="kl-reset-password-input">New Password</label>
-                            <input id="kl-reset-password-input" type="password" class="kl-input" placeholder="••••••••"
-                                autocomplete="new-password" />
-
-                            <label class="kl-label" for="kl-reset-password-confirm-input">
-                                Confirm Password
-                            </label>
-                            <input id="kl-reset-password-confirm-input" type="password" class="kl-input"
-                                placeholder="••••••••" autocomplete="new-password" />
-
-                            <div id="kl-reset-complete-error" class="kl-form-error"></div>
-
-                            <button type="submit" class="kl-btn">Finalize reset</button>
-
-                            <div class="kl-form-hint">
-                                <button type="button" id="kl-reset-back-2" class="kl-link-btn">
-                                    ⬅ Back to sign in
-                                </button>
-                            </div>
-                        </form>
-
-                    </div>
-
-                    <!-- Mock terminal input line -->
-                    <div class="kl-terminal-input-row">
-                        <span class="kl-terminal-prompt">&gt;</span>
-                        <span class="kl-terminal-input-mock" id="kl-terminal-input-mock"></span>
-                        <span class="kl-terminal-cursor" id="kl-terminal-cursor"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="kl-preloader-meta">
-                <span id="kl-status-indicator" class="kl-status-indicator">
-                    STATUS: INITIALIZING GATE…
-                </span>
-                <span class="kl-build-tag">build: v0.4.0 / gate+splash</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN APP (LOCKED BEHIND GATE) -->
-    <div id="kl-app" class="hidden">
-        <div class="kl-app-shell">
-            <!-- Top bar -->
-            <header class="kl-app-header">
-                <div class="kl-app-brand">
-                    <div class="kl-app-logo-mark">
-                        <img src="img/logo-mark.png" alt="Kryptyk Labs" />
-                    </div>
-                    <div class="kl-app-title-block">
-                        <div class="kl-app-title">KRYPTYK LABS</div>
-                        <div class="kl-app-subtitle">ORIENTATION DASHBOARD</div>
-                    </div>
-                </div>
-
-                <div class="kl-app-meta">
-                    <span id="kl-asset-email-pill" class="kl-pill">asset: unknown</span>
-                    <span class="kl-pill kl-pill-muted">clearance: INITIATED</span>
-                    <a href="profile.html" class="kl-btn kl-btn-ghost kl-btn-xs">
-                        PROFILE
-                    </a>
-                    <a href="archive.html" class="kl-btn kl-btn-ghost kl-btn-xs">
-                        ARCHIVE
-                    </a>
-                    <button id="kl-logout-btn" class="kl-btn kl-btn-ghost">
-                        LOG OUT
-                    </button>
-                </div>
-            </header>
-
-            <!-- Grid layout -->
-            <main class="kl-app-main">
-                <!-- Left column: Orientation -->
-                <section class="kl-panel">
-                    <div class="kl-panel-header">
-                        <div class="kl-dashboard-welcome">
-                            <span id="kl-welcome-name"></span>,
-                            <span id="kl-welcome-clearance"></span> clearance verified.
-                        </div>
-                        <span class="kl-panel-label">Protocol</span>
-                        <h2 class="kl-panel-title">Orientation Briefing</h2>
-                    </div>
-                    <div class="kl-panel-body">
-                        <p class="kl-panel-text">
-                            Welcome inside the Lab, asset. Your credential chain has been
-                            verified and a secure session channel has been established.
-                        </p>
-                        <p class="kl-panel-text">
-                            This console will track your missions, clearance upgrades, and
-                            system events as you progress through Kryptyk Labs.
-                        </p>
-                        <ul class="kl-panel-list">
-                            <li>✔ Gate access verified</li>
-                            <li>✔ Session token issued</li>
-                            <li>⬤ Starter Protocol queued</li>
-                        </ul>
-                    </div>
-                </section>
-
-                <!-- Right column: Starter Protocol + Log -->
-                <section class="kl-panel kl-panel-stack">
-                    <!-- Starter Protocol card -->
-                    <div class="kl-subpanel">
-                        <div class="kl-subpanel-header">
-                            <span class="kl-subpanel-tag">Mission 01</span>
-                            <h3 class="kl-subpanel-title">Starter Protocol</h3>
-                        </div>
-                        <p class="kl-subpanel-text">
-                            Your first assignment will be issued from this console. Stand by
-                            for a cryptographic beacon and follow-on instructions.
-                        </p>
-                        <button id="kl-start-mission-btn" class="kl-btn kl-btn-primary">
-                            ARM STARTER PROTOCOL
-                        </button>
-                    </div>
-
-                    <!-- System log preview -->
-                    <div class="kl-subpanel kl-subpanel-log">
-                        <div class="kl-subpanel-header">
-                            <span class="kl-subpanel-tag">System</span>
-                            <h3 class="kl-subpanel-title">Event Stream</h3>
-                        </div>
-                        <div class="kl-log-window" id="kl-log-window">
-                            <div class="kl-log-line">[CORE] orientation channel established.</div>
-                            <div class="kl-log-line">
-                                [GATE] last successful authentication: <span class="kl-log-dynamic">just now</span>
-                            </div>
-                            <div class="kl-log-line">
-                                [LAB] awaiting first mission deployment…
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
-        </div>
-
-        <!-- MISSION MODAL -->
-        <div id="kl-mission-modal" class="kl-mission-modal hidden">
-            <div class="kl-mission-dialog">
-                <div class="kl-mission-header">
-                    <span class="kl-mission-tag">Mission Briefing</span>
-                    <h2 id="kl-mission-title" class="kl-mission-title"></h2>
-                </div>
-                <div id="kl-mission-body" class="kl-mission-body"></div>
-                <div class="kl-mission-hint-block">
-                    <div class="kl-mission-hint-label">Gate Hint</div>
-                    <div id="kl-mission-hint" class="kl-mission-hint"></div>
-                </div>
-
-                <div class="kl-mission-footer">
-                    <button id="kl-mission-close" class="kl-btn kl-btn-ghost kl-btn-xs">
-                        Close
-                    </button>
-                    <button id="kl-mission-confirm" class="kl-btn kl-btn-primary kl-btn-xs">
-                        Acknowledge Briefing
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="assets/js/animations.js"></script>
-    <script type="module" src="assets/js/main.js"></script>
 </body>
+
 </html>
