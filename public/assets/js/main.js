@@ -32,6 +32,14 @@
     const keyForm = document.getElementById("kl-key-form");
     const passwordForm = document.getElementById("kl-password-form");
 
+    // Signup reset protocol fields
+    const securityQuestionSelect = document.getElementById(
+      "kl-security-question-select"
+    );
+    const securityAnswerInput = document.getElementById(
+      "kl-security-answer-input"
+    );
+
     // Login form
     const loginForm = document.getElementById("kl-login-form");
 
@@ -41,6 +49,14 @@
     const resetEmailInput = document.getElementById("kl-reset-email-input");
     const resetEmailError = document.getElementById("kl-reset-email-error");
     const resetBack1 = document.getElementById("kl-reset-back-1");
+
+    const resetChallengeForm = document.getElementById(
+      "kl-reset-challenge-form"
+    );
+    const resetQuestionText = document.getElementById("kl-reset-question-text");
+    const resetAnswerInput = document.getElementById("kl-reset-answer-input");
+    const resetAnswerError = document.getElementById("kl-reset-answer-error");
+    const resetBackChallenge = document.getElementById("kl-reset-back-challenge");
 
     const resetCompleteForm = document.getElementById("kl-reset-complete-form");
     const resetKeyInput = document.getElementById("kl-reset-key-input");
@@ -163,6 +179,7 @@
       if (passwordError) passwordError.textContent = "";
       if (loginError) loginError.textContent = "";
       if (resetEmailError) resetEmailError.textContent = "";
+      if (resetAnswerError) resetAnswerError.textContent = "";
       if (resetCompleteError) resetCompleteError.textContent = "";
       if (terminalInputMock) {
         terminalInputMock.textContent = "";
@@ -452,30 +469,153 @@
     // LORE + SPLASH + APP TRANSITIONS
     // -------------------------------------------------------
     const loreLines = [
-      "[FILE 01] Incoming signal anomaly recorded over the Pacific.",
-      "[FILE 02] Frequency does not match any known broadcast, satellite, or military band.",
-      "[FILE 03] Embedded within the noise: structured numerical sequences.",
-      "[FILE 04] Those numbers were the first keys.",
+      "KRYPTYK LABS // ACCESS CONTROL TERMINAL",
+      "PROGRAM: BLACK GLASS",
+      "CHANNEL: ORIENTATION / EXTENDED DEBRIEF",
+      "CLEARANCE REQUIRED: INITIATE (PROVISIONAL)",
+      "LOGGING: ENABLED",
+      "------------------------------------------------------------",
       "",
-      "Kryptyk Labs was not founded to entertain codebreakers.",
-      "It was created to intercept whatever is sending those sequences—and to train assets capable of answering back.",
+      "If you are reading this, you have already been screened.",
+      "Not by HR. Not by a resume parser. Not by a background check.",
+      "You were flagged by pattern.",
       "",
-      "Every access key you receive, every cipher you break, feeds into the same system:",
-      "a listening post pointed at something that has not yet explained itself.",
+      "Your interaction profile matched the one metric we can’t fabricate:",
+      "the ability to recognize structure where structure is not supposed to exist.",
       "",
-      "If you are inside this console, your pattern-matching profile was flagged as useful.",
-      "Your job is simple, but not easy:",
-      "  • decode what others overlook,",
-      "  • follow the threads the noise is hiding,",
-      "  • and survive the escalation curve.",
+      "That is why the gate opened.",
+      "That is why you are here.",
       "",
-      "INITIATE tier is observation.",
-      "OPERATIVE tier is contact.",
-      "ARCHIVIST tier is containment.",
-      "ADMIN tier is… redacted.",
+      "------------------------------------------------------------",
+      "SECTION 01 // WHAT KRYPTYK ‘IS’",
+      "------------------------------------------------------------",
       "",
-      "For now: learn the instruments. Watch the system logs. Treat every 'harmless' puzzle",
-      "as rehearsal for the moment the signal changes."
+      "‘Kryptyk Labs’ is a name you can say out loud.",
+      "It is the public-facing shell: a technical contractor front.",
+      "We publish research. We sponsor challenges. We recruit.",
+      "",
+      "The real organization is a deniable government cell.",
+      "Compartmented program designation: BLACK GLASS.",
+      "",
+      "BLACK GLASS exists for a single reason:",
+      "a non-human protocol has been observed in deep space.",
+      "Not once. Not briefly. Not passively.",
+      "Consistently, repeatedly, and with measurable adaptation to analysis.",
+      "",
+      "This is not ‘contact’.",
+      "This is traffic.",
+      "And the traffic behaves like an intrusion.",
+      "",
+      "------------------------------------------------------------",
+      "SECTION 02 // THE EVENT (1984-Δ)",
+      "------------------------------------------------------------",
+      "",
+      "In 1984-Δ, analysts recorded structured sequences embedded in background noise.",
+      "At first it looked like instrumentation error or interference.",
+      "Then it repeated.",
+      "",
+      "Not the same sequence — same behavior.",
+      "Same cadence. Same timing artifacts. Same corrective patterns.",
+      "",
+      "The signature did not resemble language.",
+      "It resembled an exchange:",
+      "handshake → challenge → response.",
+      "",
+      "The most disturbing feature:",
+      "the protocol changed when we changed how we listened.",
+      "",
+      "When a decoding approach became common, the next event arrived hardened.",
+      "When tooling was introduced, distributions shifted as if avoiding detection.",
+      "",
+      "Operational conclusion:",
+      "something was monitoring the analysis pipeline.",
+      "",
+      "------------------------------------------------------------",
+      "SECTION 03 // WHAT THIS IS (AND IS NOT)",
+      "------------------------------------------------------------",
+      "",
+      "Outsiders will call it ‘aliens’. Ignore that framing.",
+      "Treat the Signal like beaconing malware:",
+      "  • it appears where it can hide",
+      "  • it tests boundaries",
+      "  • it negotiates capabilities",
+      "  • it persists",
+      "  • it escalates",
+      "",
+      "We assess the source as a coherent extraterrestrial civilization.",
+      "Not because we believe — because the behavior requires intent.",
+      "A random phenomenon does not negotiate.",
+      "A natural process does not test for competence.",
+      "",
+      "------------------------------------------------------------",
+      "SECTION 04 // WHAT WE INVESTIGATE",
+      "------------------------------------------------------------",
+      "",
+      "PILLAR 1: ATTRIBUTION BY SKY GEOMETRY",
+      "The Signal is not omnidirectional.",
+      "Events correlate with repeatable sky coordinates and timing windows.",
+      "",
+      "PILLAR 2: PROTOCOL REVERSE ENGINEERING",
+      "We track states, retries, error correction, timing discipline, escalation.",
+      "",
+      "PILLAR 3: CONTAINMENT",
+      "Uncontrolled decoding is uncontrolled reply.",
+      "Reply is how you get profiled.",
+      "",
+      "Your missions are controlled emissions inside an isolated environment.",
+      "",
+      "------------------------------------------------------------",
+      "SECTION 05 // SKYFILES (ACTIVE CASES)",
+      "------------------------------------------------------------",
+      "",
+      "SKYFILE: PROXIMA CENTAURI — persistent low-power relay signatures.",
+      "SKYFILE: TAU CETI — clean-spectrum steganography fingerprints.",
+      "SKYFILE: EPSILON ERIDANI — chaff masking inside natural volatility.",
+      "SKYFILE: TRAPPIST-1 — synchronized multi-node timing behavior.",
+      "SKYFILE: VEGA — public sky, private payload anomalies.",
+      "",
+      "These are case files, not destinations.",
+      "We are reading the footprint, not the boot.",
+      "",
+      "------------------------------------------------------------",
+      "SECTION 06 // DOCTRINE",
+      "------------------------------------------------------------",
+      "",
+      "The Signal appears to select for competence.",
+      "Each solved layer reveals information — and reveals you.",
+      "How you think. How you try. How you fail.",
+      "",
+      "Clearance is not status.",
+      "Clearance is exposure tolerance.",
+      "",
+      "------------------------------------------------------------",
+      "SECTION 07 // RULES OF ENGAGEMENT",
+      "------------------------------------------------------------",
+      "",
+      "RULE 1: Do not reproduce sequences outside this console.",
+      "RULE 2: Do not chase validation; it is exploitable.",
+      "RULE 3: Do not improvise contact.",
+      "RULE 4: Assume you are being profiled.",
+      "RULE 5: Report anomalies, not feelings.",
+      "",
+      "------------------------------------------------------------",
+      "SECTION 08 // CLEARANCE LADDER",
+      "------------------------------------------------------------",
+      "",
+      "INITIATE: observe.",
+      "OPERATIVE: engage.",
+      "ARCHIVIST: contain.",
+      "ADMIN: redacted.",
+      "",
+      "------------------------------------------------------------",
+      "ORIENTATION COMPLETE",
+      "------------------------------------------------------------",
+      "",
+      "Proceed to controlled missions.",
+      "The gate did not open because you asked.",
+      "It opened because the system believes you might be useful.",
+      "",
+      "END DEBRIEF // STATUS: INITIATE ORIENTATION COMPLETE"
     ];
 
     // --- Lore “seen” flag helpers ---
@@ -1106,6 +1246,10 @@ Watch the Event Stream panel on the right side of the Orientation Dashboard.
         clearFieldErrors();
 
         const password = (passwordInput?.value || "").trim();
+        const securityQuestionValue = (securityQuestionSelect?.value || "").trim();
+        const securityQuestion =
+          (securityQuestionSelect?.selectedOptions?.[0]?.textContent || "").trim();
+        const securityAnswer = (securityAnswerInput?.value || "").trim();
 
         if (!signupEmail) {
           if (passwordError) {
@@ -1124,6 +1268,22 @@ Watch the Event Stream panel on the right side of the Orientation Dashboard.
           return;
         }
 
+        if (!securityQuestionValue || !securityQuestion) {
+          if (passwordError) {
+            passwordError.textContent = "Security question is required.";
+          }
+          setMockInput("> invalid: missing security question", true);
+          return;
+        }
+
+        if (!securityAnswer) {
+          if (passwordError) {
+            passwordError.textContent = "Security answer is required.";
+          }
+          setMockInput("> invalid: missing security answer", true);
+          return;
+        }
+
         setMockInput("> sealing asset credentials…");
 
         try {
@@ -1134,7 +1294,9 @@ Watch the Event Stream panel on the right side of the Orientation Dashboard.
               email: signupEmail,
               password,
               // no codename yet – keep it null for now
-              display_name: null
+              display_name: null,
+              security_question: securityQuestion,
+              security_answer: securityAnswer
             })
           });
 
@@ -1330,6 +1492,8 @@ Watch the Event Stream panel on the right side of the Orientation Dashboard.
         if (loginForm) loginForm.classList.add("kl-form-hidden");
         if (resetRequestForm)
           resetRequestForm.classList.remove("kl-form-hidden");
+        if (resetChallengeForm)
+          resetChallengeForm.classList.add("kl-form-hidden");
         if (resetCompleteForm)
           resetCompleteForm.classList.add("kl-form-hidden");
 
@@ -1341,6 +1505,24 @@ Watch the Event Stream panel on the right side of the Orientation Dashboard.
       resetBack1.addEventListener("click", () => {
         clearFieldErrors();
         if (resetRequestForm) resetRequestForm.classList.add("kl-form-hidden");
+        if (resetChallengeForm)
+          resetChallengeForm.classList.add("kl-form-hidden");
+        if (resetCompleteForm)
+          resetCompleteForm.classList.add("kl-form-hidden");
+        if (loginForm) loginForm.classList.remove("kl-form-hidden");
+        setMockInput("> returning to sign-in.");
+      });
+    }
+
+    if (resetBackChallenge) {
+      resetBackChallenge.addEventListener("click", () => {
+        clearFieldErrors();
+        resetEmailContext = "";
+        if (resetChallengeForm)
+          resetChallengeForm.classList.add("kl-form-hidden");
+        if (resetRequestForm) resetRequestForm.classList.add("kl-form-hidden");
+        if (resetCompleteForm)
+          resetCompleteForm.classList.add("kl-form-hidden");
         if (loginForm) loginForm.classList.remove("kl-form-hidden");
         setMockInput("> returning to sign-in.");
       });
@@ -1378,7 +1560,7 @@ Watch the Event Stream panel on the right side of the Orientation Dashboard.
           return;
         }
 
-        setMockInput("> transmitting reset key…");
+        setMockInput("> retrieving security prompt…");
 
         try {
           const res = await fetch(`${API_BASE}/api/auth/request-reset`, {
@@ -1391,23 +1573,40 @@ Watch the Event Stream panel on the right side of the Orientation Dashboard.
           if (!res.ok || !data.ok) {
             const msg =
               data.error ||
-              "If this asset exists, a reset key has been transmitted.";
+              "If this asset exists, a security prompt has been retrieved.";
             if (resetEmailError) resetEmailError.textContent = msg;
             setMockInput(`> response: ${msg}`, true);
             return;
           }
 
           resetEmailContext = email;
-          setMockInput("> reset key dispatched. check your channel.");
+
+          const question = String(data.question || "").trim();
+          if (!question) {
+            setMockInput("> prompt unavailable. verify asset email.", true);
+            await typeLine(
+              "[GATE] if this asset exists, its reset protocol will provide a security prompt.",
+              { system: true, charDelay: 14 }
+            );
+            // Stay on Step 1.
+            return;
+          }
+
+          if (resetQuestionText) {
+            resetQuestionText.textContent = question;
+          }
+          if (resetAnswerInput) resetAnswerInput.value = "";
+
+          setMockInput("> security prompt received. awaiting answer.");
           await typeLine(
-            "[GATE] reset token issued. supply the key and a new clearance password to complete reset.",
+            "[GATE] security prompt delivered. answer required to issue reset key.",
             { system: true, charDelay: 14 }
           );
 
           if (resetRequestForm)
             resetRequestForm.classList.add("kl-form-hidden");
-          if (resetCompleteForm)
-            resetCompleteForm.classList.remove("kl-form-hidden");
+          if (resetChallengeForm)
+            resetChallengeForm.classList.remove("kl-form-hidden");
         } catch (err) {
           console.error("request-reset error:", err);
           const msg = "Gate service unavailable.";
@@ -1417,7 +1616,81 @@ Watch the Event Stream panel on the right side of the Orientation Dashboard.
       });
     }
 
-    // Step 2: complete reset
+    // Step 2: verify security answer (issue reset key)
+    if (resetChallengeForm) {
+      resetChallengeForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearFieldErrors();
+
+        const answer = (resetAnswerInput?.value || "").trim();
+        if (!resetEmailContext) {
+          const msg = "Reset context missing. Start reset flow again.";
+          if (resetAnswerError) resetAnswerError.textContent = msg;
+          setMockInput("> invalid: reset context missing", true);
+          return;
+        }
+
+        if (!answer) {
+          const msg = "Security answer is required.";
+          if (resetAnswerError) resetAnswerError.textContent = msg;
+          setMockInput("> invalid: missing security answer", true);
+          return;
+        }
+
+        setMockInput("> verifying answer…");
+
+        try {
+          const res = await fetch(`${API_BASE}/api/auth/verify-reset-answer`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: resetEmailContext,
+              answer
+            })
+          });
+          const data = await res.json();
+
+          if (!res.ok || !data.ok) {
+            const msg = data.error || "Incorrect security answer.";
+            if (resetAnswerError) resetAnswerError.textContent = msg;
+            setMockInput(`> response: ${msg}`, true);
+            return;
+          }
+
+          const issuedKey = String(data.reset_key || "").trim();
+          if (!issuedKey) {
+            const msg = "Reset key not returned by gate.";
+            if (resetAnswerError) resetAnswerError.textContent = msg;
+            setMockInput(`> error: ${msg}`, true);
+            return;
+          }
+
+          setMockInput("> reset key issued. record it now.");
+          await typeLine(`[GATE] reset key issued: ${issuedKey}`, {
+            system: true,
+            charDelay: 14
+          });
+          await typeLine(
+            "[GATE] proceed to Step 3 to set a new clearance password.",
+            { system: true, charDelay: 14 }
+          );
+
+          if (resetChallengeForm)
+            resetChallengeForm.classList.add("kl-form-hidden");
+          if (resetCompleteForm)
+            resetCompleteForm.classList.remove("kl-form-hidden");
+
+          if (resetKeyInput) resetKeyInput.focus();
+        } catch (err) {
+          console.error("verify-reset-answer error:", err);
+          const msg = "Gate service unavailable.";
+          if (resetAnswerError) resetAnswerError.textContent = msg;
+          setMockInput(`> error: ${msg}`, true);
+        }
+      });
+    }
+
+    // Step 3: complete reset
     if (resetCompleteForm) {
       resetCompleteForm.addEventListener("submit", async (e) => {
         e.preventDefault();

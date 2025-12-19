@@ -11,23 +11,37 @@
   const lines = [
     { text: "[ SIGNAL DETECTED ]", class: "muted", delay: 600 },
 
-    { text: "", delay: 400 },
+    { text: "", delay: 350 },
+    { text: "KRYPTYK LABS // PROGRAM: BLACK GLASS", class: "strong", delay: 900 },
+    { text: "CHANNEL: DENIABLE ORIENTATION", class: "muted", delay: 850 },
 
-    { text: "You were not meant to find this system.", delay: 900 },
-
-    { text: "", delay: 500 },
-
+    { text: "", delay: 450 },
     {
       text:
-        "Kryptyk Labs investigates encrypted anomalies and hidden structures\n" +
-        "embedded across the open web.",
-      delay: 1100
+        "A non-human protocol has been observed in deep space—\n" +
+        "structured traffic embedded in background noise.",
+      delay: 1200
     },
 
-    { text: "", delay: 600 },
-
+    { text: "", delay: 450 },
     {
-      text: "Access is restricted. Observation is permitted.",
+      text:
+        "It behaves like an intrusion: handshake → challenge → response.\n" +
+        "It adapts when we change how we listen.",
+      delay: 1300
+    },
+
+    { text: "", delay: 450 },
+    {
+      text:
+        "Active skyfiles reference known systems:\n" +
+        "PROXIMA CENTAURI / TAU CETI / EPSILON ERIDANI / TRAPPIST-1 / VEGA",
+      delay: 1300
+    },
+
+    { text: "", delay: 550 },
+    {
+      text: "Access is restricted. Containment is mandatory.",
       class: "strong",
       delay: 1200
     }

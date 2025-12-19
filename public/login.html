@@ -32,8 +32,8 @@
     <div id="kl-lore" class="kl-lore">
         <div class="kl-lore-inner">
             <div class="kl-lore-header">
-                <span class="kl-lore-tag">ORIGIN DOSSIER // RED-LINE</span>
-                <h1 class="kl-lore-title">Signal Event // 1984-Δ</h1>
+                <span class="kl-lore-tag">PROGRAM: BLACK GLASS // ORIENTATION</span>
+                <h1 class="kl-lore-title">Extended Debrief // INITIATE</h1>
             </div>
 
             <div id="kl-lore-body" class="kl-lore-body">
@@ -141,6 +141,23 @@
                             <input id="kl-password-confirm-input" type="password" class="kl-input"
                                 placeholder="retype password" autocomplete="new-password" required />
 
+                            <div class="kl-form-title" style="margin-top:10px;">Reset Protocol</div>
+                            <p class="kl-form-hint">
+                                Choose a security question for password recovery.
+                            </p>
+
+                            <label class="kl-label" for="kl-security-question-select">Security Question</label>
+                            <select id="kl-security-question-select" class="kl-input" required>
+                                <option value="" selected disabled>Choose a question…</option>
+                                <option value="favorite_food">What is your favorite food?</option>
+                                <option value="street_grew_up_on">What street did you grow up on?</option>
+                                <option value="first_pet">What was the name of your first pet?</option>
+                            </select>
+
+                            <label class="kl-label" for="kl-security-answer-input">Security Answer</label>
+                            <input id="kl-security-answer-input" type="text" class="kl-input" placeholder="answer"
+                                autocomplete="off" required />
+
                             <button type="submit" class="kl-btn">
                                 SECURE CLEARANCE
                             </button>
@@ -181,7 +198,7 @@
 
                             <div id="kl-reset-email-error" class="kl-form-error"></div>
 
-                            <button type="submit" class="kl-btn">Transmit reset key</button>
+                            <button type="submit" class="kl-btn">Retrieve security prompt</button>
 
                             <div class="kl-form-hint">
                                 <button type="button" id="kl-reset-back-1" class="kl-link-btn">
@@ -190,9 +207,33 @@
                             </div>
                         </form>
 
-                        <!-- RESET STEP 2: ENTER RESET KEY + NEW PASSWORD -->
-                        <form id="kl-reset-complete-form" class="kl-form kl-form-hidden" novalidate>
+                        <!-- RESET STEP 2: SECURITY QUESTION -->
+                        <form id="kl-reset-challenge-form" class="kl-form kl-form-hidden" novalidate>
                             <div class="kl-form-title">Reset clearance — Step 2</div>
+
+                            <p class="kl-form-hint">Answer the security question to receive a reset key.</p>
+
+                            <label class="kl-label">Security Question</label>
+                            <div id="kl-reset-question-text" class="kl-form-hint"></div>
+
+                            <label class="kl-label" for="kl-reset-answer-input">Security Answer</label>
+                            <input id="kl-reset-answer-input" type="text" class="kl-input" placeholder="answer"
+                                autocomplete="off" />
+
+                            <div id="kl-reset-answer-error" class="kl-form-error"></div>
+
+                            <button type="submit" class="kl-btn">Verify answer</button>
+
+                            <div class="kl-form-hint">
+                                <button type="button" id="kl-reset-back-challenge" class="kl-link-btn">
+                                    ⬅ Back to sign in
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- RESET STEP 3: ENTER RESET KEY + NEW PASSWORD -->
+                        <form id="kl-reset-complete-form" class="kl-form kl-form-hidden" novalidate>
+                            <div class="kl-form-title">Reset clearance — Step 3</div>
 
                             <p class="kl-form-hint">
                                 Enter the reset key you received, then set a new clearance password.

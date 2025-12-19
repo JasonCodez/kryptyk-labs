@@ -7,7 +7,6 @@ const multer = require("multer");
 const path = require("path");
 const ACCESS_KEY_TTL_MINUTES = Number(process.env.ACCESS_KEY_TTL_MINUTES || 15);
 
-const crypto = require("crypto");
 
 const router = express.Router();
 
@@ -49,6 +48,7 @@ async function validateAccessKey(userId, rawKey) {
     `SELECT id, key_hash, expires_at, used
      FROM access_keys
      WHERE user_id = $1
+       AND kind = 'signup'
        AND used = FALSE
        AND expires_at > NOW()
      ORDER BY created_at DESC
@@ -79,6 +79,7 @@ async function markKeyUsed(id) {
   await db.query(
     `UPDATE access_keys
      SET used = TRUE
+        , used_at = COALESCE(used_at, NOW())
      WHERE id = $1`,
     [id]
   );
@@ -175,8 +176,8 @@ router.post("/request-access", async (req, res) => {
 
     // Store key tied to email (your later flow uses email)
     await db.query(
-      `INSERT INTO access_keys (email, user_id, key_hash, created_at, expires_at, used, attempts)
-       VALUES ($1, $2, $3, NOW(), $4, FALSE, 0)`,
+      `INSERT INTO access_keys (email, user_id, key_hash, kind, created_at, expires_at, used, attempts)
+       VALUES ($1, $2, $3, 'signup', NOW(), $4, FALSE, 0)`,
       [normalizedEmail, user.id, key_hash, expiresAt]
     );
 
@@ -217,6 +218,7 @@ router.post("/verify-key", async (req, res) => {
       `SELECT id, key_hash, expires_at, used, attempts
        FROM access_keys
        WHERE email = $1
+         AND kind = 'signup'
        ORDER BY created_at DESC
        LIMIT 1`,
       [normalizedEmail]
@@ -297,7 +299,8 @@ router.post("/verify-key", async (req, res) => {
 
 // ---------- COMPLETE SIGNUP (set password + create user) ----------
 router.post("/complete-signup", async (req, res) => {
-  const { email, password, display_name } = req.body;
+  const { email, password, display_name, security_question, security_answer } =
+    req.body;
 
   try {
     console.log("[COMPLETE-SIGNUP] incoming body:", {
@@ -320,6 +323,20 @@ router.post("/complete-signup", async (req, res) => {
       });
     }
 
+    if (!security_question || typeof security_question !== "string") {
+      return res.status(400).json({
+        ok: false,
+        error: "Security question is required."
+      });
+    }
+
+    if (!security_answer || typeof security_answer !== "string" || !security_answer.trim()) {
+      return res.status(400).json({
+        ok: false,
+        error: "Security answer is required."
+      });
+    }
+
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
       return res.status(400).json({
@@ -339,6 +356,7 @@ router.post("/complete-signup", async (req, res) => {
         SELECT id, used, expires_at
         FROM access_keys
         WHERE email = $1
+          AND kind = 'signup'
         ORDER BY created_at DESC
         LIMIT 1
         `,
@@ -378,6 +396,8 @@ router.post("/complete-signup", async (req, res) => {
       const rounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
       const passwordHash = await bcrypt.hash(password, rounds);
 
+      const securityAnswerHash = await bcrypt.hash(security_answer.trim(), rounds);
+
       // 3) Upsert user with password + optional display_name
       const userRes = await client.query(
         `
@@ -385,6 +405,8 @@ router.post("/complete-signup", async (req, res) => {
     email,
     password_hash,
     display_name,
+    security_question,
+    security_answer_hash,
     clearance_level,
     clearance_progress_pct,
     created_at,
@@ -395,6 +417,8 @@ router.post("/complete-signup", async (req, res) => {
     $1,
     $2,
     $3,
+    $4,
+    $5,
     'INITIATED',
     5,
     NOW(),
@@ -405,6 +429,8 @@ router.post("/complete-signup", async (req, res) => {
   SET
     password_hash = EXCLUDED.password_hash,
     display_name = COALESCE(EXCLUDED.display_name, users.display_name),
+    security_question = COALESCE(EXCLUDED.security_question, users.security_question),
+    security_answer_hash = COALESCE(EXCLUDED.security_answer_hash, users.security_answer_hash),
     is_verified   = TRUE
   RETURNING
     id,
@@ -415,7 +441,13 @@ router.post("/complete-signup", async (req, res) => {
     debrief_seen,
     debrief_seen_at
   `,
-        [normalizedEmail, passwordHash, display_name || null]
+        [
+          normalizedEmail,
+          passwordHash,
+          display_name || null,
+          security_question,
+          securityAnswerHash
+        ]
       );
 
       const user = userRes.rows[0];
@@ -585,7 +617,7 @@ router.post("/request-reset", async (req, res) => {
   try {
     // 1) Look up user; if not found, respond success anyway to avoid leaking which emails exist
     const userResult = await db.query(
-      `SELECT id, email, is_verified
+      `SELECT id, email, is_verified, security_question, security_answer_hash
        FROM users
        WHERE email = $1`,
       [email]
@@ -600,12 +632,70 @@ router.post("/request-reset", async (req, res) => {
       });
     }
 
-    // 2) Generate reset key
-    const plainKey = Math.floor(100000 + Math.random() * 900000).toString();
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
-    const keyHash = await bcrypt.hash(plainKey, rounds);
+    // Return security question (no key yet). Key is issued only after answering.
+    if (!user.security_question || !user.security_answer_hash) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "No reset protocol is configured for this asset. Complete signup again or contact an administrator."
+      });
+    }
 
-    // 3) Insert reset key into access_keys INCLUDING email
+    return res.json({
+      ok: true,
+      message: "Security prompt retrieved.",
+      question: user.security_question
+    });
+  } catch (err) {
+    console.error("request-reset error:", err);
+    return res.status(500).json({
+      ok: false,
+      error: "The lab console failed to generate your reset key."
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// PASSWORD RESET: verify-reset-answer
+// Body: { email, answer }
+// Returns: { ok: true, reset_key }
+// -------------------------------------------------------------
+router.post("/verify-reset-answer", async (req, res) => {
+  try {
+    const rawEmail = req.body?.email;
+    const answer = req.body?.answer;
+
+    const email = normalizeEmail(rawEmail);
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      return res.status(400).json({ ok: false, error: "Invalid email." });
+    }
+    if (!answer || typeof answer !== "string" || !answer.trim()) {
+      return res.status(400).json({
+        ok: false,
+        error: "Security answer is required."
+      });
+    }
+
+    const user = await findUserByEmail(email);
+    if (!user || !user.security_answer_hash) {
+      return res.status(400).json({
+        ok: false,
+        error: "Reset failed. Verify your prompt and try again."
+      });
+    }
+
+    const ok = await bcrypt.compare(answer.trim(), user.security_answer_hash);
+    if (!ok) {
+      return res.status(400).json({
+        ok: false,
+        error: "Incorrect security answer."
+      });
+    }
+
+    // Generate reset key and store it
+    const plainKey = generateSixDigitKey();
+    const keyHash = await hashKey(plainKey);
+
     const insertKeySql = `
       INSERT INTO access_keys (
         email,
@@ -629,26 +719,21 @@ router.post("/request-reset", async (req, res) => {
         0,
         FALSE
       )
-      RETURNING id, email, created_at, expires_at;
+      RETURNING id, created_at, expires_at;
     `;
 
-    console.log("[REQUEST-RESET] inserting reset key for:", email);
-    const keyResult = await db.query(insertKeySql, [email, user.id, keyHash]);
-    console.log("[REQUEST-RESET] inserted access_key row (reset):", keyResult.rows[0]);
-
-    // 4) TODO: send reset email here using your mailer (with plainKey)
-    console.log("[REQUEST-RESET] plain reset key (for testing only):", plainKey);
+    await db.query(insertKeySql, [email, user.id, keyHash]);
 
     return res.json({
       ok: true,
-      message: "If this asset exists in the lab, a reset key has been dispatched."
+      message: "Reset key issued.",
+      reset_key: plainKey
     });
   } catch (err) {
-    console.error("request-reset error:", err);
-    return res.status(500).json({
-      ok: false,
-      error: "The lab console failed to generate your reset key."
-    });
+    console.error("verify-reset-answer error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, error: "Failed to verify security answer." });
   }
 });
 

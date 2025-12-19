@@ -1,22 +1,37 @@
 const nodemailer = require("nodemailer");
 
-// Transporter uses your Gmail, Outlook, or SMTP provider.
-const transporter = nodemailer.createTransport({
-  host: "smtp-mail.outlook.com",
-  port: 587,
-  secure: false, // TLS
-  auth: {
-    user: process.env.EMAIL_USER, // kryptyklabs@outlook.com
-    pass: process.env.EMAIL_PASS  // the actual mailbox password
-  }
-});
+function isEmailConfigured() {
+  return !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+}
+
+function getTransporter() {
+  // Transporter uses your SMTP provider (Outlook by default).
+  // You can override with EMAIL_HOST / EMAIL_PORT / EMAIL_SECURE.
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp-mail.outlook.com",
+    port: Number(process.env.EMAIL_PORT || 587),
+    secure: String(process.env.EMAIL_SECURE || "false").toLowerCase() === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+}
 
 
 // --- MAIN SEND FUNCTION ---
 async function sendEmail(to, subject, html) {
+  if (!isEmailConfigured()) {
+    throw new Error(
+      "Email not configured: set EMAIL_USER and EMAIL_PASS (and optionally EMAIL_HOST/EMAIL_PORT)."
+    );
+  }
+
+  const transporter = getTransporter();
+
   try {
     await transporter.sendMail({
-      from: `"Kryptyk Labs" <${process.env.MAIL_USER}>`,
+      from: process.env.EMAIL_FROM || `"Kryptyk Labs" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html
@@ -69,6 +84,7 @@ async function sendResetKeyEmail(email, key) {
 
 module.exports = {
   sendAccessKeyEmail,
-  sendResetKeyEmail
+  sendResetKeyEmail,
+  isEmailConfigured
 };
 

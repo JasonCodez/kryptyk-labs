@@ -69,6 +69,12 @@
     const mottoInput = document.getElementById("kl-motto-input");
     const mottoError = document.getElementById("kl-motto-error");
 
+    // Notepad (local-only)
+    const notepadForm = document.getElementById("kl-notepad-form");
+    const notepadInput = document.getElementById("kl-notepad-input");
+    const notepadStatus = document.getElementById("kl-notepad-status");
+    const NOTEPAD_STORAGE_KEY = "kl_profile_notepad_v1";
+
     // Display name onboarding
     const displayNameForm = document.getElementById("kl-display-name-form");
     const displayNameInput = document.getElementById("kl-display-name-input");
@@ -103,6 +109,23 @@
         errorBanner.style.display = "block";
       } else {
         console.error("[PROFILE ERROR]", msg);
+      }
+    }
+
+    function setNotepadStatus(msg) {
+      if (!notepadStatus) return;
+      notepadStatus.textContent = msg || "";
+    }
+
+    function loadNotepadFromLocalStorage() {
+      if (!notepadInput) return;
+      try {
+        const saved = localStorage.getItem(NOTEPAD_STORAGE_KEY);
+        if (typeof saved === "string") {
+          notepadInput.value = saved;
+        }
+      } catch (err) {
+        console.warn("[NOTEPAD] failed to read localStorage:", err);
       }
     }
 
@@ -284,6 +307,24 @@
             mottoError.textContent =
               "Transmission failed. Try again in a moment.";
           }
+        }
+      });
+    }
+
+    // Notepad: save locally
+    if (notepadForm && notepadInput) {
+      loadNotepadFromLocalStorage();
+
+      notepadForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        setNotepadStatus("");
+
+        try {
+          localStorage.setItem(NOTEPAD_STORAGE_KEY, notepadInput.value || "");
+          setNotepadStatus("Saved locally.");
+        } catch (err) {
+          console.warn("[NOTEPAD] failed to write localStorage:", err);
+          setNotepadStatus("Unable to save notes locally.");
         }
       });
     }
