@@ -1,20 +1,29 @@
 // kryptyk-labs-api/clearance.js
 
 function normalizeClearance(value) {
-  return (value || "INITIATED").toString().trim().toUpperCase();
+  const raw = (value || "INITIATED").toString().trim().toUpperCase();
+  const base = raw.split("-")[0] || "INITIATED";
+
+  // Back-compat: older values used INITIATED as the tier label.
+  if (base === "INITIATED") return "INITIATE";
+  return base;
 }
 
 function clearanceForSuccessfulMissions(successCount) {
   const n = Math.max(0, Number(successCount) || 0);
-  // Thresholds (server-authoritative):
-  // <10 INITIATED
-  // 10–29 OPERATIVE
-  // 30–59 ARCHIVIST
-  // >=60 ADMIN
-  if (n >= 60) return "ADMIN";
-  if (n >= 30) return "ARCHIVIST";
-  if (n >= 10) return "OPERATIVE";
-  return "INITIATED";
+
+  // Server-authoritative tiers (cumulative mission thresholds):
+  // 0–9    => INITIATE
+  // 10–29  => OPERATIVE
+  // 30–59  => ARCHIVIST
+  // >=60   => ADMIN
+  //
+  // Display rank resets per tier: <TIER>-<missions_within_tier>
+  // Example: 5 missions => INITIATE-5
+  if (n >= 60) return `ADMIN-${n - 60}`;
+  if (n >= 30) return `ARCHIVIST-${n - 30}`;
+  if (n >= 10) return `OPERATIVE-${n - 10}`;
+  return `INITIATE-${n}`;
 }
 
 function progressPctToNextTier(successCount) {

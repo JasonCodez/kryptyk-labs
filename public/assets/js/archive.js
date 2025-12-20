@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const email = localStorage.getItem("kl_asset_email") || "unknown@asset";
   const rawName = (localStorage.getItem("kl_display_name") || "").trim();
   const clearance =
-    (localStorage.getItem("kl_clearance_level") || "INITIATED").toUpperCase();
+    (localStorage.getItem("kl_clearance_level") || "INITIATE-0").toUpperCase();
 
   const assetLabel = rawName
     ? `asset: ${rawName.toUpperCase()}`

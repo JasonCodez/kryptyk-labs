@@ -340,9 +340,10 @@ router.post("/complete", authMiddleware, async (req, res) => {
       "SELECT clearance_level FROM users WHERE id = $1",
       [userId]
     );
-    const previousClearance = normalizeClearance(userRows[0]?.clearance_level);
+    const previousTier = normalizeClearance(userRows[0]?.clearance_level);
+    const nextTier = normalizeClearance(computedClearance);
 
-    const rankedUp = previousClearance !== computedClearance;
+    const rankedUp = previousTier !== nextTier;
 
     await client.query(
       "UPDATE users SET clearance_level = $1, clearance_progress_pct = $2 WHERE id = $3",
@@ -593,8 +594,9 @@ router.post("/submit", authMiddleware, async (req, res) => {
         "SELECT clearance_level FROM users WHERE id = $1",
         [userId]
       );
-      const previousClearance = normalizeClearance(userRows[0]?.clearance_level);
-      const rankedUp = previousClearance !== computedClearance;
+      const previousTier = normalizeClearance(userRows[0]?.clearance_level);
+      const nextTier = normalizeClearance(computedClearance);
+      const rankedUp = previousTier !== nextTier;
 
       await client.query(
         "UPDATE users SET clearance_level = $1, clearance_progress_pct = $2 WHERE id = $3",

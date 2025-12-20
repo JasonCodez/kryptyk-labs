@@ -218,7 +218,7 @@
             ? rawDisplayName.trim()
             : "Asset");
 
-        const clearanceRaw = profile.clearance_level || "INITIATED";
+        const clearanceRaw = profile.clearance_level || "INITIATE-0";
         const clearance = clearanceRaw.toUpperCase();
 
         // Core fields in the dossier body

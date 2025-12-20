@@ -192,7 +192,7 @@
       const rawDisplayName = localStorage.getItem("kl_display_name") || "";
       const displayName = rawDisplayName.trim();
       const clearance =
-        localStorage.getItem("kl_clearance_level") || "INITIATED";
+        localStorage.getItem("kl_clearance_level") || "INITIATE-0";
 
       // Top-right "ASSET: ..." pill
       if (assetEmailPill) {
