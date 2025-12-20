@@ -14,6 +14,7 @@ const router = express.Router();
 
 const STARTER_PROTOCOL_ID = "starter-protocol-01";
 const INITIATE_001_ID = "initiate-001-packet-parse";
+const INITIATE_002_ID = "initiate-002-order-of-ops";
 
 function computeChecksumFromNonce(nonce) {
   const digits = String(nonce || "").replace(/\D/g, "").split("");
@@ -66,6 +67,59 @@ async function computeInitiate001Packet(userId) {
 
   return {
     nonce,
+    packet
+  };
+}
+
+async function computeInitiate002Packet(userId) {
+  const { rows } = await db.query(
+    "SELECT id, email, last_login_at, created_at FROM users WHERE id = $1",
+    [userId]
+  );
+  const user = rows[0];
+  if (!user) return null;
+
+  const secret =
+    process.env.MISSION_SECRET || process.env.JWT_SECRET || "changeme";
+
+  const baseTime = user.last_login_at || user.created_at;
+  const base = `${user.id}|${user.email}|${new Date(baseTime).toISOString()}|INITIATE_002`;
+  const hex = crypto.createHmac("sha256", secret).update(base).digest("hex");
+
+  const seq = hex.slice(12, 18).toUpperCase();
+  const n = Number.parseInt(hex.slice(0, 12), 16) % 1000000;
+  const nonce = String(n).padStart(6, "0");
+
+  const frame = Number.parseInt(hex.slice(18, 20), 16) % 2 === 0 ? "HANDSHAKE" : "DATA";
+
+  const packet = {
+    proto: "BG/1.0",
+    channel: "BLACK_GLASS",
+    frame,
+    route: "C2/ORIENT",
+    ts_utc: new Date().toISOString(),
+    seq,
+    nonce,
+    noise: {
+      jitter_ms: (Number.parseInt(hex.slice(20, 22), 16) % 27) + 3,
+      ecc: hex.slice(22, 30).toUpperCase(),
+      relay: `RLY-${hex.slice(30, 34).toUpperCase()}`,
+      padding: hex.slice(34, 50)
+    },
+    payload: {
+      op: "CHALLENGE",
+      target: "ASSET_VALIDATION",
+      note: "Order matters. Follow the operator precedence in the briefing.",
+      rules: {
+        order_of_ops: "IF frame == HANDSHAKE => submit NONCE (6 digits). ELSE => submit SEQ (6 hex chars)."
+      }
+    }
+  };
+
+  return {
+    frame,
+    nonce,
+    seq,
     packet
   };
 }
@@ -221,6 +275,29 @@ router.get("/initiate-001-packet", authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error("/api/missions/initiate-001-packet error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, error: "Failed to load mission packet." });
+  }
+});
+
+/**
+ * GET /api/missions/initiate-002-packet
+ * Returns the packet used for INITIATE-002 // ORDER OF OPS.
+ */
+router.get("/initiate-002-packet", authMiddleware, async (req, res) => {
+  try {
+    const result = await computeInitiate002Packet(req.user.id);
+    if (!result) {
+      return res.status(404).json({ ok: false, error: "User not found." });
+    }
+    return res.json({
+      ok: true,
+      mission_id: INITIATE_002_ID,
+      packet: result.packet
+    });
+  } catch (err) {
+    console.error("/api/missions/initiate-002-packet error:", err);
     return res
       .status(500)
       .json({ ok: false, error: "Failed to load mission packet." });
@@ -483,7 +560,7 @@ router.post("/submit", authMiddleware, async (req, res) => {
     return res.status(400).json({ ok: false, error: "answer is required." });
   }
 
-  const supported = new Set([STARTER_PROTOCOL_ID, INITIATE_001_ID]);
+  const supported = new Set([STARTER_PROTOCOL_ID, INITIATE_001_ID, INITIATE_002_ID]);
   if (!supported.has(missionId)) {
     return res.status(400).json({ ok: false, error: "Unsupported mission_id for submission." });
   }
@@ -546,6 +623,37 @@ router.post("/submit", authMiddleware, async (req, res) => {
       const expected = result.nonce;
       correct = submitted === expected;
       incorrectMessage = "Incorrect NONCE. Re-parse the packet and copy it exactly.";
+    }
+
+    if (missionId === INITIATE_002_ID) {
+      const result = await computeInitiate002Packet(userId);
+      if (!result) {
+        return res.status(404).json({ ok: false, error: "User not found." });
+      }
+
+      if (String(result.frame).toUpperCase() === "HANDSHAKE") {
+        if (!/^\d{6}$/.test(submitted)) {
+          return res.json({
+            ok: true,
+            mission_id: missionId,
+            correct: false,
+            message: "Response format invalid. Expected the 6-digit NONCE."
+          });
+        }
+        correct = submitted === result.nonce;
+        incorrectMessage = "Incorrect NONCE. Re-check the frame and copy the correct field.";
+      } else {
+        if (!/^[A-F0-9]{6}$/i.test(submitted)) {
+          return res.json({
+            ok: true,
+            mission_id: missionId,
+            correct: false,
+            message: "Response format invalid. Expected the 6-character SEQ."
+          });
+        }
+        correct = submitted.toUpperCase() === String(result.seq).toUpperCase();
+        incorrectMessage = "Incorrect SEQ. Re-check the frame and copy the correct field.";
+      }
     }
 
     if (!correct) {

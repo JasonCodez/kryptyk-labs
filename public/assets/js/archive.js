@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Mission console (INITIATE-001)
   const starterOpenBtn = document.getElementById("kl-initiate-001-open");
   const starterStatusEl = document.getElementById("kl-initiate-001-status");
+  const missionConsoleTitleEl = document.getElementById("kl-mission-console-title");
+  const missionConsoleDescEl = document.getElementById("kl-mission-console-desc");
 
   // Mission modal elements
   const missionModal = document.getElementById("kl-mission-modal");
@@ -33,7 +35,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const INITIATE_001_ID = "initiate-001-packet-parse";
-  let initiate001Completed = false;
+  const INITIATE_002_ID = "initiate-002-order-of-ops";
+
+  const completion = {
+    [INITIATE_001_ID]: false,
+    [INITIATE_002_ID]: false
+  };
+
+  let activeMissionId = INITIATE_001_ID;
 
   const initiate001Mission = {
     id: INITIATE_001_ID,
@@ -43,6 +52,18 @@ document.addEventListener("DOMContentLoaded", () => {
       "When the packet arrives, locate the NONCE and submit it exactly as shown (6 digits).",
     hint:
       "Response format: 6 digits. Locate NONCE in the packet and submit it exactly."
+  };
+
+  const initiate002Mission = {
+    id: INITIATE_002_ID,
+    title: "INITIATE-002 // ORDER OF OPS",
+    body:
+      "Packet sync in progress…\n\n" +
+      "When the packet arrives, check FRAME first.\n" +
+      "IF frame == HANDSHAKE => submit NONCE (6 digits).\n" +
+      "ELSE => submit SEQ (6 characters).",
+    hint:
+      "Order of ops: FRAME decides the field. HANDSHAKE => NONCE. Otherwise => SEQ."
   };
 
   // Basic header hydrate
@@ -84,12 +105,39 @@ document.addEventListener("DOMContentLoaded", () => {
     starterStatusEl.classList.remove("hidden");
   }
 
-  function setStarterProtocolCompletedUI() {
-    showStarterStatus("STATUS: VERIFIED — INITIATE-001 completed.");
-    if (starterOpenBtn) {
+  function setMissionConsoleUI() {
+    if (!starterOpenBtn) return;
+
+    const bothComplete = completion[INITIATE_001_ID] && completion[INITIATE_002_ID];
+    if (bothComplete) {
+      showStarterStatus("STATUS: VERIFIED — INITIATE sequence complete.");
       starterOpenBtn.disabled = true;
-      starterOpenBtn.textContent = "INITIATE-001 VERIFIED";
+      starterOpenBtn.textContent = "INITIATE VERIFIED";
+      if (missionConsoleTitleEl) missionConsoleTitleEl.textContent = "INITIATE MISSIONS";
+      if (missionConsoleDescEl) missionConsoleDescEl.textContent = "No further initiate missions available.";
+      return;
     }
+
+    if (!completion[INITIATE_001_ID]) {
+      activeMissionId = INITIATE_001_ID;
+      if (missionConsoleTitleEl) missionConsoleTitleEl.textContent = "INITIATE-001 // PACKET PARSE";
+      if (missionConsoleDescEl) {
+        missionConsoleDescEl.textContent =
+          "Open the briefing, locate the NONCE in the packet, and submit it exactly as shown.";
+      }
+      starterOpenBtn.disabled = false;
+      starterOpenBtn.textContent = "OPEN INITIATE-001";
+      return;
+    }
+
+    activeMissionId = INITIATE_002_ID;
+    if (missionConsoleTitleEl) missionConsoleTitleEl.textContent = "INITIATE-002 // ORDER OF OPS";
+    if (missionConsoleDescEl) {
+      missionConsoleDescEl.textContent =
+        "Open the briefing, check FRAME, then submit NONCE (HANDSHAKE) or SEQ (otherwise).";
+    }
+    starterOpenBtn.disabled = false;
+    starterOpenBtn.textContent = "OPEN INITIATE-002";
   }
 
   function clearMissionMessages() {
@@ -110,9 +158,9 @@ document.addEventListener("DOMContentLoaded", () => {
     missionModal.setAttribute("data-mission-id", mission.id);
     missionModal.classList.remove("hidden");
 
-    if (mission.id === INITIATE_001_ID && initiate001Completed) {
+    if (completion[mission.id]) {
       if (missionAnswerStatus) {
-        missionAnswerStatus.textContent = "Already verified. INITIATE-001 is complete.";
+        missionAnswerStatus.textContent = "Already verified. Mission is complete.";
         missionAnswerStatus.classList.remove("hidden");
       }
       if (missionAnswerInput) missionAnswerInput.disabled = true;
@@ -135,38 +183,44 @@ document.addEventListener("DOMContentLoaded", () => {
     clearMissionMessages();
   }
 
-  async function refreshStarterProtocolStatus() {
+  async function fetchMissionStatus(missionId) {
+    const res = await fetch(
+      `${API_BASE}/api/missions/status?mission_id=${encodeURIComponent(missionId)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || !data.ok) return { ok: false };
+    return { ok: true, completed: !!data.completed };
+  }
+
+  async function refreshMissionProgression() {
     try {
-      const res = await fetch(
-        `${API_BASE}/api/missions/status?mission_id=${encodeURIComponent(
-          INITIATE_001_ID
-        )}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data || !data.ok) return;
+      const [m1, m2] = await Promise.all([
+        fetchMissionStatus(INITIATE_001_ID),
+        fetchMissionStatus(INITIATE_002_ID)
+      ]);
 
-      if (data.completed) {
-        initiate001Completed = true;
-        setStarterProtocolCompletedUI();
+      if (m1.ok) completion[INITIATE_001_ID] = !!m1.completed;
+      if (m2.ok) completion[INITIATE_002_ID] = !!m2.completed;
 
-        const openMissionId = missionModal?.getAttribute("data-mission-id") || "";
-        if (openMissionId === INITIATE_001_ID) {
-          if (missionAnswerStatus) {
-            missionAnswerStatus.textContent = "Already verified. INITIATE-001 is complete.";
-            missionAnswerStatus.classList.remove("hidden");
-          }
-          if (missionAnswerInput) missionAnswerInput.disabled = true;
-          if (missionSubmitBtn) missionSubmitBtn.disabled = true;
+      setMissionConsoleUI();
+
+      const openMissionId = missionModal?.getAttribute("data-mission-id") || "";
+      if (openMissionId && completion[openMissionId]) {
+        if (missionAnswerStatus) {
+          missionAnswerStatus.textContent = "Already verified. Mission is complete.";
+          missionAnswerStatus.classList.remove("hidden");
         }
+        if (missionAnswerInput) missionAnswerInput.disabled = true;
+        if (missionSubmitBtn) missionSubmitBtn.disabled = true;
       }
     } catch (err) {
       // non-fatal
     }
   }
 
-  async function fetchInitiate001Packet() {
-    const res = await fetch(`${API_BASE}/api/missions/initiate-001-packet`, {
+  async function fetchMissionPacket(endpointPath) {
+    const res = await fetch(`${API_BASE}${endpointPath}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     const data = await res.json().catch(() => null);
@@ -189,12 +243,26 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+  function buildInitiate002Body(packet) {
+    const packetText = packet ? JSON.stringify(packet, null, 2) : "(packet unavailable)";
+    return (
+      "Mission: INITIATE-002 // ORDER OF OPS\n\n" +
+      "Objective:\n" +
+      "1) Check FRAME first.\n" +
+      "2) If frame == HANDSHAKE, submit NONCE (6 digits).\n" +
+      "3) Otherwise, submit SEQ (6 characters).\n\n" +
+      "PACKET:\n" +
+      packetText +
+      "\n"
+    );
+  }
+
   async function openInitiate001Modal() {
     openMissionModal(initiate001Mission);
     if (!missionBodyEl) return;
 
     missionBodyEl.textContent = "Syncing packet…";
-    const result = await fetchInitiate001Packet();
+    const result = await fetchMissionPacket("/api/missions/initiate-001-packet");
     if (!result.ok) {
       missionBodyEl.textContent =
         "Packet sync failed. Try again.\n\n" +
@@ -202,6 +270,29 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     missionBodyEl.textContent = buildInitiate001Body(result.packet);
+  }
+
+  async function openInitiate002Modal() {
+    openMissionModal(initiate002Mission);
+    if (!missionBodyEl) return;
+
+    missionBodyEl.textContent = "Syncing packet…";
+    const result = await fetchMissionPacket("/api/missions/initiate-002-packet");
+    if (!result.ok) {
+      missionBodyEl.textContent =
+        "Packet sync failed. Try again.\n\n" +
+        (result.error || "Unable to sync packet.");
+      return;
+    }
+    missionBodyEl.textContent = buildInitiate002Body(result.packet);
+  }
+
+  async function openActiveMissionModal() {
+    if (activeMissionId === INITIATE_002_ID) {
+      await openInitiate002Modal();
+      return;
+    }
+    await openInitiate001Modal();
   }
 
   async function submitMissionAnswer(missionId, answer) {
@@ -364,7 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Wire Starter Protocol UI
   if (starterOpenBtn) {
     starterOpenBtn.addEventListener("click", () => {
-      void openInitiate001Modal();
+      void openActiveMissionModal();
     });
   }
 
@@ -390,12 +481,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!missionId) return;
 
-      if (missionId === INITIATE_001_ID && initiate001Completed) {
+      if (completion[missionId]) {
         if (missionAnswerStatus) {
-          missionAnswerStatus.textContent = "Already verified. INITIATE-001 is complete.";
+          missionAnswerStatus.textContent = "Already verified. Mission is complete.";
           missionAnswerStatus.classList.remove("hidden");
         }
-        setStarterProtocolCompletedUI();
+        setMissionConsoleUI();
         return;
       }
 
@@ -419,22 +510,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (data.already_completed) {
-          initiate001Completed = true;
+          completion[missionId] = true;
           if (missionAnswerStatus) {
-            missionAnswerStatus.textContent = "Already verified. INITIATE-001 is complete.";
+            missionAnswerStatus.textContent = "Already verified. Mission is complete.";
             missionAnswerStatus.classList.remove("hidden");
           }
-          setStarterProtocolCompletedUI();
+          setMissionConsoleUI();
           return;
         }
 
         // Confirmation of success (requested)
         if (missionAnswerStatus) {
-          missionAnswerStatus.textContent = "Verified. INITIATE-001 completed.";
+          missionAnswerStatus.textContent = "Verified. Mission completed.";
           missionAnswerStatus.classList.remove("hidden");
         }
-        initiate001Completed = true;
-        setStarterProtocolCompletedUI();
+        completion[missionId] = true;
+
+        // Refresh progression in case we just unlocked INITIATE-002.
+        await refreshMissionProgression();
 
         // Update local storage + header pills
         if (data.clearance_level) {
@@ -445,13 +538,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Refresh archive list so the completion event appears
         await loadArchive();
       } finally {
-        if (!initiate001Completed) {
+        if (!completion[missionId]) {
           missionSubmitBtn.disabled = false;
         }
       }
     });
   }
 
-  void refreshStarterProtocolStatus();
+  void refreshMissionProgression();
   loadArchive();
 });
