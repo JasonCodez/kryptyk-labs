@@ -22,6 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const missionModal = document.getElementById("kl-mission-modal");
   const missionTitleEl = document.getElementById("kl-mission-title");
   const missionBodyEl = document.getElementById("kl-mission-body");
+  const missionLearnMoreBtn = document.getElementById("kl-mission-learn-more-btn");
+  const missionLearnMoreBlock = document.getElementById("kl-mission-learn-more");
+  const missionLearnMoreBody = document.getElementById("kl-mission-learn-more-body");
   const missionHintEl = document.getElementById("kl-mission-hint");
   const missionCloseBtn = document.getElementById("kl-mission-close");
   const missionAnswerBlock = document.getElementById("kl-mission-answer-block");
@@ -151,6 +154,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function setLearnMoreVisible(visible) {
+    if (!missionLearnMoreBlock) return;
+    missionLearnMoreBlock.classList.toggle("hidden", !visible);
+  }
+
+  function learnMoreTextForMission(missionId) {
+    const base =
+      "This packet is JSON (JavaScript Object Notation).\n" +
+      "Think of it like a labeled form: each label (a key) maps to a value.\n" +
+      "Example: \"nonce\": \"123456\" means the field named NONCE contains the text 123456.\n\n" +
+      "Common value types you’ll see:\n" +
+      "- strings: text in quotes (\"HANDSHAKE\", \"RLY-AB12\")\n" +
+      "- numbers: numeric values (like jitter_ms)\n" +
+      "- objects: grouped fields inside { } (like noise, payload)\n\n" +
+      "Tip: ignore fields labeled noise unless instructed otherwise.";
+
+    if (missionId === INITIATE_002_ID) {
+      return (
+        base +
+        "\n\nFor INITIATE-002:\n" +
+        "- frame tells you which rule to follow (it’s a normal text field).\n" +
+        "- If frame is HANDSHAKE, submit nonce (6 digits).\n" +
+        "- Otherwise, submit seq (6 characters, shown as hex A–F/0–9)."
+      );
+    }
+
+    return (
+      base +
+      "\n\nFor INITIATE-001:\n" +
+      "- Your job is simply to find the field named nonce and copy it exactly (6 digits)."
+    );
+  }
+
   function setMissionAnswerVisible(visible) {
     if (missionAnswerBlock) {
       missionAnswerBlock.classList.toggle("hidden", !visible);
@@ -231,6 +267,11 @@ document.addEventListener("DOMContentLoaded", () => {
     missionModal.setAttribute("data-mission-id", mission.id);
     missionModal.classList.remove("hidden");
 
+    if (missionLearnMoreBody) {
+      missionLearnMoreBody.textContent = learnMoreTextForMission(mission.id);
+    }
+    setLearnMoreVisible(false);
+
     // Default: show answer UI. It may be replaced with a receipt if already completed.
     setMissionAnswerVisible(true);
 
@@ -262,6 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (missionAnswerInput) missionAnswerInput.disabled = false;
     if (missionSubmitBtn) missionSubmitBtn.disabled = false;
     setMissionAnswerVisible(true);
+    setLearnMoreVisible(false);
     clearMissionMessages();
   }
 
@@ -557,6 +599,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.target === missionModal) {
         closeMissionModal();
       }
+    });
+  }
+
+  if (missionLearnMoreBtn) {
+    missionLearnMoreBtn.addEventListener("click", () => {
+      if (!missionLearnMoreBlock) return;
+      const visible = !missionLearnMoreBlock.classList.contains("hidden");
+      setLearnMoreVisible(!visible);
     });
   }
 
