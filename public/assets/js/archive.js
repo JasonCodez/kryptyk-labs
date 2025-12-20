@@ -24,10 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const missionBodyEl = document.getElementById("kl-mission-body");
   const missionHintEl = document.getElementById("kl-mission-hint");
   const missionCloseBtn = document.getElementById("kl-mission-close");
+  const missionAnswerBlock = document.getElementById("kl-mission-answer-block");
   const missionAnswerInput = document.getElementById("kl-mission-answer-input");
   const missionAnswerError = document.getElementById("kl-mission-answer-error");
   const missionAnswerStatus = document.getElementById("kl-mission-answer-status");
   const missionSubmitBtn = document.getElementById("kl-mission-submit");
+  const missionReceiptBlock = document.getElementById("kl-mission-receipt-block");
+  const missionReceiptBody = document.getElementById("kl-mission-receipt-body");
 
   if (!token) {
     window.location.href = "login.html";
@@ -148,6 +151,76 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function setMissionAnswerVisible(visible) {
+    if (missionAnswerBlock) {
+      missionAnswerBlock.classList.toggle("hidden", !visible);
+    }
+    if (missionReceiptBlock) {
+      missionReceiptBlock.classList.toggle("hidden", visible);
+    }
+
+    if (visible) {
+      if (missionAnswerInput) missionAnswerInput.disabled = false;
+      if (missionSubmitBtn) missionSubmitBtn.disabled = false;
+    }
+  }
+
+  function fnv1aHex6(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i += 1) {
+      h ^= str.charCodeAt(i);
+      // 32-bit FNV-1a prime: 16777619
+      h = (h + (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24)) >>> 0;
+    }
+    return h.toString(16).padStart(8, "0").slice(-6).toUpperCase();
+  }
+
+  function makeDossierRef(missionId) {
+    const userId = localStorage.getItem("kl_user_id") || "unknown";
+    const email = localStorage.getItem("kl_asset_email") || "unknown@asset";
+    const seed = `${userId}|${email}|${missionId}|BG`;
+    return `BG-VERIFIED-${fnv1aHex6(seed)}`;
+  }
+
+  function nextUnlockedLine(afterMissionId) {
+    const bothComplete = completion[INITIATE_001_ID] && completion[INITIATE_002_ID];
+    if (bothComplete) return "NEXT: NONE — INITIATE SEQUENCE COMPLETE";
+
+    if (afterMissionId === INITIATE_001_ID && !completion[INITIATE_002_ID]) {
+      return "NEXT UNLOCKED: INITIATE-002 // ORDER OF OPS";
+    }
+
+    return "NEXT: PENDING — AWAITING AUTHORIZATION";
+  }
+
+  function renderArchiveReceipt({
+    stamp,
+    missionTitle,
+    prevClearance,
+    nextClearance,
+    afterMissionId
+  }) {
+    if (!missionReceiptBody) return;
+
+    const prev = String(prevClearance || "").toUpperCase();
+    const next = String(nextClearance || prevClearance || "").toUpperCase();
+    const clearanceLine = prev && next && prev !== next
+      ? `CLEARANCE UPDATED: ${prev} → ${next}`
+      : `CLEARANCE CONFIRMED: ${next || prev || "UNKNOWN"}`;
+
+    const receipt =
+      `ARCHIVE STAMP: ${stamp}\n` +
+      `LOG ENTRY: MISSION_COMPLETE\n` +
+      `MISSION: ${missionTitle || "UNKNOWN"}\n` +
+      `DOSSIER REF: ${makeDossierRef(afterMissionId || "UNKNOWN")}\n` +
+      `${clearanceLine}\n` +
+      `${nextUnlockedLine(afterMissionId)}\n` +
+      `UTC: ${new Date().toISOString()}`;
+
+    missionReceiptBody.textContent = receipt;
+    setMissionAnswerVisible(false);
+  }
+
   function openMissionModal(mission) {
     if (!missionModal) return;
     if (missionTitleEl) missionTitleEl.textContent = mission.title;
@@ -158,19 +231,27 @@ document.addEventListener("DOMContentLoaded", () => {
     missionModal.setAttribute("data-mission-id", mission.id);
     missionModal.classList.remove("hidden");
 
+    // Default: show answer UI. It may be replaced with a receipt if already completed.
+    setMissionAnswerVisible(true);
+
     if (completion[mission.id]) {
-      if (missionAnswerStatus) {
-        missionAnswerStatus.textContent = "Already verified. Mission is complete.";
-        missionAnswerStatus.classList.remove("hidden");
-      }
-      if (missionAnswerInput) missionAnswerInput.disabled = true;
-      if (missionSubmitBtn) missionSubmitBtn.disabled = true;
+      const currentClearance = (localStorage.getItem("kl_clearance_level") || "INITIATE-0").toUpperCase();
+      renderArchiveReceipt({
+        stamp: "ACCEPTED — ON FILE",
+        missionTitle: mission.title,
+        prevClearance: currentClearance,
+        nextClearance: currentClearance,
+        afterMissionId: mission.id
+      });
     } else {
       if (missionAnswerInput) missionAnswerInput.disabled = false;
       if (missionSubmitBtn) missionSubmitBtn.disabled = false;
     }
 
-    setTimeout(() => missionAnswerInput?.focus(), 50);
+    // Only focus input if the answer UI is visible.
+    if (!completion[mission.id]) {
+      setTimeout(() => missionAnswerInput?.focus(), 50);
+    }
   }
 
   function closeMissionModal() {
@@ -180,6 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (missionAnswerInput) missionAnswerInput.value = "";
     if (missionAnswerInput) missionAnswerInput.disabled = false;
     if (missionSubmitBtn) missionSubmitBtn.disabled = false;
+    setMissionAnswerVisible(true);
     clearMissionMessages();
   }
 
@@ -207,12 +289,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const openMissionId = missionModal?.getAttribute("data-mission-id") || "";
       if (openMissionId && completion[openMissionId]) {
-        if (missionAnswerStatus) {
-          missionAnswerStatus.textContent = "Already verified. Mission is complete.";
-          missionAnswerStatus.classList.remove("hidden");
-        }
-        if (missionAnswerInput) missionAnswerInput.disabled = true;
-        if (missionSubmitBtn) missionSubmitBtn.disabled = true;
+        const missionTitle = openMissionId === INITIATE_002_ID
+          ? initiate002Mission.title
+          : initiate001Mission.title;
+        const currentClearance = (localStorage.getItem("kl_clearance_level") || "INITIATE-0").toUpperCase();
+        renderArchiveReceipt({
+          stamp: "ACCEPTED — ON FILE",
+          missionTitle,
+          prevClearance: currentClearance,
+          nextClearance: currentClearance,
+          afterMissionId: openMissionId
+        });
       }
     } catch (err) {
       // non-fatal
@@ -481,11 +568,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!missionId) return;
 
+      const prevClearance = (localStorage.getItem("kl_clearance_level") || "INITIATE-0").toUpperCase();
+      const missionTitle = missionId === INITIATE_002_ID
+        ? initiate002Mission.title
+        : initiate001Mission.title;
+
       if (completion[missionId]) {
-        if (missionAnswerStatus) {
-          missionAnswerStatus.textContent = "Already verified. Mission is complete.";
-          missionAnswerStatus.classList.remove("hidden");
-        }
+        renderArchiveReceipt({
+          stamp: "ACCEPTED — ON FILE",
+          missionTitle,
+          prevClearance,
+          nextClearance: prevClearance,
+          afterMissionId: missionId
+        });
         setMissionConsoleUI();
         return;
       }
@@ -511,23 +606,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (data.already_completed) {
           completion[missionId] = true;
-          if (missionAnswerStatus) {
-            missionAnswerStatus.textContent = "Already verified. Mission is complete.";
-            missionAnswerStatus.classList.remove("hidden");
-          }
+          const current = (localStorage.getItem("kl_clearance_level") || prevClearance).toUpperCase();
+          renderArchiveReceipt({
+            stamp: "ACCEPTED — ON FILE",
+            missionTitle,
+            prevClearance: current,
+            nextClearance: current,
+            afterMissionId: missionId
+          });
           setMissionConsoleUI();
           return;
         }
 
-        // Confirmation of success (requested)
-        if (missionAnswerStatus) {
-          missionAnswerStatus.textContent = "Verified. Mission completed.";
-          missionAnswerStatus.classList.remove("hidden");
-        }
         completion[missionId] = true;
+
+        const nextClearance = String(data.clearance_level || prevClearance).toUpperCase();
 
         // Refresh progression in case we just unlocked INITIATE-002.
         await refreshMissionProgression();
+
+        renderArchiveReceipt({
+          stamp: "ACCEPTED",
+          missionTitle,
+          prevClearance,
+          nextClearance,
+          afterMissionId: missionId
+        });
 
         // Update local storage + header pills
         if (data.clearance_level) {
